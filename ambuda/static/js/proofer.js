@@ -228,7 +228,7 @@ export default () => ({
 
   // Before the form is submitted, copy contents of the ProseMirror editor back to the textarea.
   syncPMToTextarea() {
-    document.querySelector('textarea').value = this.textValue();
+    document.querySelector('textarea').value = JSON.stringify(this.view.state.doc.toJSON());
   },
 
   textValue() {

@@ -23,6 +23,9 @@ const schema = new Schema({
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
 function docFromText(text: string): Node {
+  try {
+    return schema.nodeFromJSON(JSON.parse(text));
+  } catch { };
   // Could create it manually with schema.node() and schema.text(),
   // but can also turn into div and parse it.
   const dom = document.createElement('div');
