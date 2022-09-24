@@ -146,7 +146,7 @@ def download_as_text(slug):
         abort(404)
 
     content_blobs = [
-        p.revisions[-1].content if p.revisions else "" for p in project_.pages
+        (p.revisions[-1].content, p.revisions[-1].content_schema_version) if p.revisions else "" for p in project_.pages
     ]
     raw_text = proofing_utils.to_plain_text(content_blobs)
 
@@ -175,7 +175,7 @@ def download_as_xml(slug):
     }
     project_meta = {k: v or "TODO" for k, v in project_meta.items()}
     content_blobs = [
-        p.revisions[-1].content if p.revisions else "" for p in project_.pages
+        (p.revisions[-1].content, p.revisions[-1].content_schema_version) if p.revisions else "" for p in project_.pages
     ]
     xml_blob = proofing_utils.to_tei_xml(project_meta, content_blobs)
 
