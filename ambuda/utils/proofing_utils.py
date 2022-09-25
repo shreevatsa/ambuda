@@ -57,9 +57,8 @@ and resolve any TODOs. -->
 
 PageContent = str
 Line = str
-Block = list[Line]
 
-def _iter_blocks(blobs: Iterator[PageContent]) -> Iterator[Block]:
+def _iter_blocks(blobs: Iterator[PageContent]) -> Iterator[list[Line]]:
     """Iterate over text blobs as a stream of blocks.
 
     A block is a sequence of lines separated by an empty line."""
@@ -82,7 +81,7 @@ def _iter_blocks(blobs: Iterator[PageContent]) -> Iterator[Block]:
         yield buf
 
 
-def _is_verse(lines: Block) -> bool:
+def _is_verse(lines: list[Line]) -> bool:
     """Heuristically decide whether a list of lines represents a verse."""
     return lines[-1].endswith(DOUBLE_DANDA)
 
@@ -92,7 +91,7 @@ def to_plain_text(blobs: list[PageContent]) -> str:
     
     blobs: The content of each page."""
 
-    def _create_plain_text_block(lines: Block) -> str:
+    def _create_plain_text_block(lines: list[Line]) -> str:
         """Convert a group of lines into a well-formatted plain-text block."""
         if _is_verse(lines):
             return "\n".join(lines)
@@ -114,7 +113,7 @@ def to_plain_text(blobs: list[PageContent]) -> str:
 def to_tei_xml(project_meta: dict[str, str], blobs: list[(PageContent, int)]) -> str:
     """Publish a project as TEI XML."""
 
-    def _create_xml_block(lines: Block) -> str:
+    def _create_xml_block(lines: list[Line]) -> str:
         """Convert a group of lines into a well-formatted TEI XML block."""
         if _is_verse(lines):
             buf = ["<lg>"]
