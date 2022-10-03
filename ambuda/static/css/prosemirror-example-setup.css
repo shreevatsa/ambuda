@@ -13,3 +13,13 @@ https://github.com/ProseMirror/prosemirror-gapcursor/blob/master/style/gapcursor
     padding: 4px 8px;
     height: 100%;
 }
+
+.ProseMirror .paragraph {
+    border: 2px dotted blue;
+}
+
+.ProseMirror .verse {
+    border: 2px dotted green;
+    margin-left: 20%;
+    margin-right: 20%;
+}

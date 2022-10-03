@@ -1,11 +1,49 @@
 """
 Utils for working with proofread pages.
 
+Content_Schema_Version 0: PageContent is a text string.
 
+`to_plain_text`:
+  - Return text version of blocks, separated by "\n\n"
+  - Here, "text version of block" means:
+    - For verse, the lines in the block joined by "\n"
+    - For prose, the lines in the block joined by " ", except in case of hyphens where no " " and the hyphen is removed.
+
+`to_tei_xml`:
+  - Return the concatenation of:
+    - _create_tei_header_boilerplate(...)
+    - For each page,
+      - <pb n="{page_number}" />
+      - The xml version of each block, separated by "\n\n"
+  - Here, "xml version of block" means:
+    - For verse,
+      - "<lg>"
+      - "  <l>{line}</l>" for each line
+      - "</lg>"
+    - For prose,
+      - "<p>"
+      - The text of the paragraph (as in `to_plain_text` above)
+      - "</p>"
+
+Content_Schema_Version 1: PageContent is a JSON string, where the JSON object has the following schema:
+
+  ProofedPage := Metadata + Block*
+  Metadata := {PageNumber: String, }
+  Block := Verse | Paragraph | Heading | Trailer | Skip
+  Verse := Line*
+  Paragraph := Line*
+  Line := (inline text)
+  Heading := Level + (inline text)
+
+So there's a page.blocks getter, and a `block.to_plain_text` and `block.to_tei_xml` for each kind of block.
+
+`to_plain_text`:
+  - Return text version of blocks, separated by "\n\n"
 """
 
 from datetime import date
-from typing import Iterator
+from typing import Iterator, Tuple
+import json
 
 DOUBLE_DANDA = "\u0965"
 
@@ -58,7 +96,7 @@ and resolve any TODOs. -->
 PageContent = str
 Line = str
 
-def _iter_blocks(blobs: Iterator[PageContent]) -> Iterator[list[Line]]:
+def _iter_blocks(blobs: Iterator[Tuple[PageContent, int]]) -> Iterator[list[Line]]:
     """Iterate over text blobs as a stream of blocks.
 
     A block is a sequence of lines separated by an empty line."""
@@ -70,15 +108,21 @@ def _iter_blocks(blobs: Iterator[PageContent]) -> Iterator[list[Line]]:
             for line in blob.splitlines():
                 yield line.strip()
 
-    buf = []
-    for line in _iter_raw_text_lines(blobs):
-        if line:
+    for (blob, version) in blobs:
+      if version:
+        blob = json.loads(blob)
+        for block in blob['blocks']:
+          yield block
+      else:
+        buf = []
+        for line in _iter_raw_text_lines([blob]):
+          if line:
             buf.append(line)
-        elif buf:
+          elif buf:
             yield buf
             buf = []
-    if buf:
-        yield buf
+        if buf:
+          yield buf
 
 
 def _is_verse(lines: list[Line]) -> bool:
@@ -86,7 +130,7 @@ def _is_verse(lines: list[Line]) -> bool:
     return lines[-1].endswith(DOUBLE_DANDA)
 
 
-def to_plain_text(blobs: list[PageContent]) -> str:
+def to_plain_text(blobs: list[(PageContent, int)]) -> str:
     """Publish a project as plain text.
     
     blobs: The content of each page."""

@@ -148,7 +148,7 @@ class Revision(Base):
     #: The actual content of this revision.
     content = Column(Text_, nullable=False)
     #: How to interpret the "content" column.
-    content_schema_version = Column(Integer, default=0, nullable=False)
+    content_schema_version = Column(Integer, default=0, nullable=True)
 
     #: An ordered list of revisions for this page (newest first).
     author = relationship("User", backref="revisions")
