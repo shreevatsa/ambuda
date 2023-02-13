@@ -96,6 +96,7 @@ and resolve any TODOs. -->
 PageContent = str
 Line = str
 
+
 def _iter_blocks(blobs: Iterator[Tuple[PageContent, int]]) -> Iterator[list[Line]]:
     """Iterate over text blobs as a stream of blocks.
 

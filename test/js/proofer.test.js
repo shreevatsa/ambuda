@@ -1,5 +1,5 @@
 import { $ } from '@/core.ts';
-import Proofer from '@/proofer';
+import { Proofer } from '@/proofer.js';
 import { TextSelection } from 'prosemirror-state';
 
 const sampleHTML = `
@@ -16,7 +16,7 @@ window.OpenSeadragon = (_) => ({
   addHandler: jest.fn((_, callback) => callback()),
   viewport: {
     getHomeZoom: jest.fn(() => 0.5),
-    zoomTo: jest.fn((_) => {}),
+    zoomTo: jest.fn((_) => { }),
   }
 });
 window.Sanscript = {
@@ -37,6 +37,9 @@ window.fetch = jest.fn(async (url) => {
     }
   }
 });
+navigator.clipboard = {
+  writeText: jest.fn((s) => { }),
+}
 
 beforeEach(() => {
   window.location = null;
@@ -83,6 +86,17 @@ test('loadSettings works if localStorage data is corrupt', () => {
   const p = Proofer();
   p.loadSettings();
   // No error -- OK
+});
+
+test('onBeforeUnload shows text if changes are present.', () => {
+  const p = Proofer();
+  p.hasUnsavedChanges = true;
+  expect(p.onBeforeUnload()).toBe(true);
+});
+
+test('onBeforeUnload shows no text if no changes have been made.', () => {
+  const p = Proofer();
+  expect(p.onBeforeUnload()).toBe(null);
 });
 
 test('runOCR handles a valid server response', async () => {
@@ -186,12 +200,12 @@ test('displayTopAndBottom works and gets saved', () => {
 // Sets the ProseMirror editor's selection from `from` to `to`: note that these depend on
 // the schema and are not byte offsets: https://prosemirror.net/docs/guide/#doc.indexing
 function setSelectionRange(p, from, to) {
-  p.view.updateState(p.view.state.apply(p.view.state.tr.setSelection(
+  p.editorView().dispatch(p.editorView().state.tr.setSelection(
     new TextSelection(
-      p.view.state.doc.resolve(from),
-      p.view.state.doc.resolve(to),
+      p.editorView().state.doc.resolve(from),
+      p.editorView().state.doc.resolve(to),
     ),
-  )));
+  ));
 }
 
 test('transliterate works and saves settings', () => {
@@ -239,4 +253,19 @@ test('markAsFootnoteNumber works', () => {
   const { p, $text } = markupFixtures();
   p.markAsFootnoteNumber()
   expect(p.textValue()).toBe('This is [^sample] text.')
+});
+
+test('replaceColonVisarga works', () => {
+  const $text = $('#content');
+  $text.value = 'क: खा: गि : घी:'
+  const p = Proofer();
+  p.init();
+  setSelectionRange(p, 3, 12);
+  p.replaceColonVisarga();
+  expect(p.textValue()).toBe('क: खाः गि ः घी:');
+});
+
+test('copyCharacter works', () => {
+  const { p } = markupFixtures();
+  p.copyCharacter({ target: { textContent: 'foo' } });
 });

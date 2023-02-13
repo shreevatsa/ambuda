@@ -45,7 +45,8 @@ function initializeImageViewer(imageURL) {
   });
 }
 
-export default () => ({
+// eslint-disable-next-line import/prefer-default-export
+export const Proofer = () => ({
   // Settings
   textZoom: 1,
   imageZoom: null,
@@ -72,18 +73,14 @@ export default () => ({
       this.imageViewer.viewport.zoomTo(this.imageZoom);
     });
 
-    this.view = createEditorFromTextAt(document.querySelector('textarea').value, document.getElementById('editor'));
-    window.view = this.view;
-    this.view.focus();
+    const view = createEditorFromTextAt(document.querySelector('textarea').value, document.getElementById('editor'));
+    this.editorView = () => view;
+    window.view = this.editorView();
+    this.editorView().focus();
 
-    // Warn the user if navigating away with unsaved changes.
-    window.onbeforeunload = () => {
-      if (this.hasUnsavedChanges) {
-        return 'You have unsaved changes! If you leave this page, your changes will be lost.';
-      }
-      // so that eslint doesn't complain
-      return undefined;
-    };
+    // Use `.bind(this)` so that `this` in the function refers to this app and
+    // not `window`.
+    window.onbeforeunload = this.onBeforeUnload.bind(this);
   },
 
   // Settings IO
@@ -101,11 +98,6 @@ export default () => ({
 
         this.fromScript = settings.fromScript || this.fromScript;
         this.toScript = settings.toScript || this.toScript;
-
-        // Normalize layout value to protect against some recent refactoring.
-        if (!ALL_LAYOUTS.includes(this.layout)) {
-          this.layout = LAYOUT_SIDE_BY_SIDE;
-        }
       } catch (error) {
         // Old settings are invalid -- rewrite with valid values.
         this.saveSettings();
@@ -127,6 +119,18 @@ export default () => ({
       return CLASSES_TOP_AND_BOTTOM;
     }
     return CLASSES_SIDE_BY_SIDE;
+  },
+
+  // Callbacks
+
+  /** Displays a warning dialog if the user has unsaved changes and tries to navigate away. */
+  onBeforeUnload(e) {
+    if (this.hasUnsavedChanges) {
+      // Keeps the dialog event.
+      return true;
+    }
+    // Cancels the dialog event.
+    return null;
   },
 
   // OCR controls
@@ -194,14 +198,13 @@ export default () => ({
   // Markup controls
 
   changeSelectedText(callback) {
-    const { state } = this.view;
+    const { state } = this.editorView();
     let { tr } = state;
     const replacement = callback(state.doc.textBetween(tr.selection.from, tr.selection.to));
     tr = tr.replaceRangeWith(tr.selection.from, tr.selection.to, state.schema.text(replacement));
-    // Note: `this.view.dispatch(tr)` fails with "RangeError: Applying a mismatched transaction"
-    this.view.updateState(state.apply(tr));
+    this.editorView().dispatch(tr);
     // Retain focus for better UX.
-    this.view.focus();
+    this.editorView().focus();
   },
   markAsError() {
     this.changeSelectedText((s) => `<error>${s}</error>`);
@@ -214,6 +217,12 @@ export default () => ({
   },
   markAsFootnoteNumber() {
     this.changeSelectedText((s) => `[^${s}]`);
+  },
+  replaceColonVisarga() {
+    this.changeSelectedText((s) => s.replaceAll(':', 'ः'));
+  },
+  replaceSAvagraha() {
+    this.changeSelectedText((s) => s.replaceAll('S', 'ऽ'));
   },
   transliterate() {
     this.changeSelectedText((s) => Sanscript.t(s, this.fromScript, this.toScript));
@@ -232,7 +241,11 @@ export default () => ({
   },
 
   textValue() {
-    return toText(this.view);
+    return toText(this.editorView());
   },
 
+});
+
+window.addEventListener('alpine:init', () => {
+  Alpine.data('proofer', Proofer);
 });
