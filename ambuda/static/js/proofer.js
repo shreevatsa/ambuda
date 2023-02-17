@@ -3,7 +3,7 @@
 
 import { AllSelection } from 'prosemirror-state';
 import { $ } from './core.ts';
-import { toText, createEditorFromTextAt } from './pm-editor/pm-editor.ts';
+import { toText, createEditorFromTextAt, sliceFromOcr } from './pm-editor/pm-editor.ts';
 
 const CONFIG_KEY = 'proofing-editor';
 
@@ -140,20 +140,29 @@ export const Proofer = () => ({
     this.isRunningOCR = true;
 
     const { pathname } = window.location;
-    const url = pathname.replace('/proofing/', '/api/ocr/');
+    const url = pathname.replace('/proofing/', '/api/ocr2/');
 
     const content = await fetch(url)
       .then((response) => {
         if (response.ok) {
-          return response.text();
+          window.gotResponse = response;
+          return response.json();
         }
         return '(server error)';
       });
+
+    console.log(content);
+    // TODO: SPlit 
     // $('#content').value = content;
+    // for (let w of content.textAnnotations.slice(1)) {
+    //   console.log(w);
+    // }
     const { state } = this.editorView();
+    // console.log('And as text:');
+    // console.log(state.schema.text(content));
     let { tr } = state;
     tr = tr.setSelection(new AllSelection(state.doc));
-    tr.replaceSelectionWith(state.schema.text(content));
+    tr.replaceSelection(sliceFromOcr(content));
     this.editorView().dispatch(tr);
     this.editorView().focus();
     this.isRunningOCR = false;

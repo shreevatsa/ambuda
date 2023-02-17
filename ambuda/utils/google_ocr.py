@@ -74,6 +74,9 @@ def run(file_path: Path) -> OcrResponse:
     # context = vision.ImageContext(language_hints=['sa'])
     response = client.document_text_detection(image=image)  # , image_context=context)
     document = response.full_text_annotation
+    # import ipdb
+    # ipdb.set_trace()
+    # return AnnotateImageResponse.to_json(response)
 
     buf = []
     bounding_boxes = []
@@ -114,3 +117,98 @@ def run(file_path: Path) -> OcrResponse:
 
     text_content = post_process("".join(buf))
     return OcrResponse(text_content=text_content, bounding_boxes=bounding_boxes)
+
+
+def clean_google_ocr_response(c):
+    """Clean up the response from Google OCR a bit, removing known-useless fields."""
+
+    def clean_node(p, also=None):
+        """Remove useless things that occur repeatedly. 
+        
+        (And maybe also some useful ones, passed in `also`.)"""
+        if 'normalizedVertices' in p and p['normalizedVertices'] == []:
+            del p['normalizedVertices']
+        if 'property' in p and p['property'] == {}:
+            del p['property']
+            
+        # Overriding the caller's preference. TODO: Better alternative to this hack :)            
+        if also and 'boundingPoly' in also:
+            also.remove('boundingPoly')
+        if also and 'boundingBox' in also:
+            also.remove('boundingBox')
+            
+        if not also: return
+        for key in also:
+            if key in p:
+                del p[key]
+
+    for key in ['faceAnnotations', 'landmarkAnnotations', 'logoAnnotations', 
+                'labelAnnotations', 'localizedObjectAnnotations']:
+        if key in c and c[key] == []: del c[key]
+    for t in c['textAnnotations']:
+        for key in ['locations', 'properties']:
+            if key in t and t[key] == []: del t[key]
+        for key in ['mid', 'locale']:
+            if key in t and t[key] == '': del t[key]
+        for key in ['score', 'confidence', 'topicality']:
+            if key in t and t[key] == 0.0: del t[key]
+        if 'boundingPoly' in t: clean_node(t['boundingPoly'])
+        clean_node(t, also=['boundingPoly'])
+        if 'text' in c['fullTextAnnotation'] and c['fullTextAnnotation']['text'] == c['textAnnotations'][0]['description']:
+            del c['fullTextAnnotation']['text']
+        for page in c['fullTextAnnotation']['pages']:
+            if 'property' in page: clean_node(page['property'], also=['detectedLanguages'])
+            clean_node(page, also=['confidence'])
+            for block in page['blocks']:
+                if 'boundingBox' in block: clean_node(block['boundingBox'])
+                clean_node(block, also=['boundingBox', 'confidence'])
+                if 'blockType' in block and block['blockType'] == 1: # TEXT
+                    del block['blockType']
+                for paragraph in block['paragraphs']:
+                    if 'boundingBox' in paragraph: clean_node(paragraph['boundingBox'])
+                    clean_node(paragraph, also=['boundingBox', 'confidence'])
+                    if 'property' in paragraph: clean_node(paragraph['property'], also=['detectedLanguages'])
+                    for word in paragraph['words']:
+                        if 'boundingBox' in word: clean_node(word['boundingBox'])
+                        clean_node(word, also=['boundingBox', 'confidence'])
+                        if 'property' in word: clean_node(word['property'], also=['detectedLanguages'])
+                        for symbol in word['symbols']:
+                            if 'boundingBox' in symbol: clean_node(symbol['boundingBox'])
+                            clean_node(symbol, also=['boundingBox', 'confidence'])
+                            if 'property' in symbol:
+                                p = symbol['property']
+                                if 'detectedLanguages' in p and p['detectedLanguages'] == []:
+                                    del p['detectedLanguages']
+                                clean_node(p, also=['detectedLanguages'])
+                                if 'detectedBreak' in p:
+                                    if 'isPrefix' in p['detectedBreak'] and p['detectedBreak']['isPrefix'] == False:
+                                        del p['detectedBreak']['isPrefix']
+                                    # Seen in practice: Most detected spaces inside a word are meaningless, just noise.
+                                    if p['detectedBreak'] == {'type': 1}:
+                                        del p['detectedBreak']
+
+
+def run2(file_path: Path) -> OcrResponse:
+    logging.debug(f"Starting full text annotation: {file_path}")
+    
+    cache_dir = file_path.as_posix() + '_cache'
+    cache_filename = cache_dir + '/response.json'
+    import os.path, json, os
+    if os.path.isfile(cache_filename):
+        c = json.load(open(cache_filename))
+        c = json.loads(c)
+        clean_google_ocr_response(c)
+        c = json.dumps(c)
+        return c
+
+    client = vision.ImageAnnotatorClient()
+    image = prepare_image(file_path)
+    response = client.document_text_detection(image=image)
+    # import ipdb
+    # ipdb.set_trace()
+    ret = AnnotateImageResponse.to_json(response)
+    clean_google_ocr_response(ret)
+    os.makedirs(cache_dir, exist_ok=True)
+    json.dump(ret, open(cache_filename, 'w'))
+    assert ret == json.load(open(cache_filename))
+    return ret

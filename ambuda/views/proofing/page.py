@@ -284,3 +284,17 @@ def ocr(project_slug, page_slug):
     image_path = get_page_image_filepath(project_slug, page_slug)
     ocr_response = google_ocr.run(image_path)
     return ocr_response.text_content
+
+# FIXME: See above.
+@api.route("/ocr2/<project_slug>/<page_slug>/")
+@login_required
+def ocr2(project_slug, page_slug):
+    """Apply Google OCR to the given page."""
+    project_ = q.project(project_slug)
+    if project_ is None: abort(404)
+
+    page_ = q.page(project_.id, page_slug)
+    if not page_: abort(404)
+
+    image_path = get_page_image_filepath(project_slug, page_slug)
+    return google_ocr.run2(image_path)

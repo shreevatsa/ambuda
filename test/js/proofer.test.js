@@ -26,7 +26,7 @@ window.Sanscript = {
 }
 window.fetch = jest.fn(async (url) => {
   // Special URL so we can test server errors.
-  if (url === '/api/ocr/error') {
+  if (['/api/ocr/error', '/api/ocr2/error'].includes(url)) {
     return { ok: false }
   } else {
     const segments = url.split('/');

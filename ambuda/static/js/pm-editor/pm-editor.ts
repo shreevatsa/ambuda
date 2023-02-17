@@ -1,7 +1,7 @@
 import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import {
-  DOMOutputSpec, DOMParser, Node, Schema,
+  DOMOutputSpec, DOMParser, Fragment, Node, Schema, Slice,
 } from 'prosemirror-model';
 import { keymap } from 'prosemirror-keymap';
 import { undo, redo, history } from 'prosemirror-history';
@@ -20,6 +20,65 @@ const schema = new Schema({
     text: { inline: true },
   },
 });
+
+export function sliceFromOcr(response: any) {
+  console.log(response);
+  // An array of lines, where each line is an array of words.
+  let lines: any[][] = [];
+  // Crude line-breaking heuristic.
+  /*
+      def same_line(new: BBox, old: BBox, threshold_fraction: float) -> bool:
+        return (new.ymin < old.ymin or
+                new.ymax < old.ymax or
+                new.ymin < old.ymin + threshold_fraction * (old.ymax - old.ymin))
+  */
+  function xmin(word) {
+    return Math.min(...word.boundingPoly.vertices.map(({ x: v }) => v));
+  }
+  function xmax(word) {
+    return Math.max(...word.boundingPoly.vertices.map(({ x: v }) => v));
+  }
+  function ymin(word) {
+    return Math.min(...word.boundingPoly.vertices.map(({ y: v }) => v));
+  }
+  function ymax(word) {
+    return Math.max(...word.boundingPoly.vertices.map(({ y: v }) => v));
+  }
+
+  function same_line(word, prev) {
+    return ymin(word) < ymin(prev) || ymax(word) < ymax(prev) || ymin(word) < ymin(prev) + 0.4 * (ymax(prev) - ymin(word));
+  }
+  for (let word of response.textAnnotations.slice(1)) {
+    if (lines.length == 0) {
+      lines.push([word]);
+      continue;
+    }
+    let currentLine = lines[lines.length - 1];
+    let prev = currentLine[currentLine.length - 1];
+    if (same_line(word, prev)) {
+      currentLine.push(word);
+      // console.log('Same line: ', word, prev);
+      continue;
+    }
+    // console.log('Different lines: ', word, prev);
+    // Otherwise, start a new line.
+    lines.push([word]);
+  }
+  console.log(lines);
+  let nodes: Node[] = [];
+  for (let line of lines) {
+    let node = schema.node(
+      'line',
+      null,
+      schema.text(line.map(word => word.description).join(' ')));
+    nodes.push(node);
+  }
+
+  // const node: Node = schema.text(`(Not yet implemented: ${response.textAnnotations.length} annotations.)`);
+  const fragment: Fragment = Fragment.from(nodes);
+  const slice: Slice = new Slice(fragment, 0, 0);
+  return slice;
+}
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
 function docFromText(text: string): Node {
