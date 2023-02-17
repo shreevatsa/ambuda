@@ -7,6 +7,17 @@ import { keymap } from 'prosemirror-keymap';
 import { undo, redo, history } from 'prosemirror-history';
 import { baseKeymap } from 'prosemirror-commands';
 
+type Box = {
+  xmin: number,
+  xmax: number,
+  ymin: number,
+  ymax: number
+};
+
+function printBox(box: Box) {
+  return `[${box.xmin}..${box.xmax}]×[${box.ymin}..${box.ymax}]`;
+}
+
 const schema = new Schema({
   nodes: {
     // The document (page) is a nonempty sequence of lines.
@@ -14,8 +25,20 @@ const schema = new Schema({
     // A line contains text. Represented in the DOM as a `<p>` element.
     line: {
       content: 'text*',
+      attrs: {
+        box: { default: null },
+      },
       parseDOM: [{ tag: 'p' }],
-      toDOM() { return ['p', 0] as DOMOutputSpec; },
+      toDOM(node) {
+        // return ['p', 0] as DOMOutputSpec;
+        let p = document.createElement('p');
+        let text = '';
+        if (node.attrs.box != null) {
+          text = `[Box: ${printBox(node.attrs.box)}]`;
+        }
+        p.textContent = text + node.textContent;
+        return p;
+      },
     },
     text: { inline: true },
   },
@@ -44,6 +67,14 @@ export function sliceFromOcr(response: any) {
   function ymax(word) {
     return Math.max(...word.boundingPoly.vertices.map(({ y: v }) => v));
   }
+  function box(line): Box {
+    return {
+      xmin: Math.min(...line.map(word => xmin(word))),
+      xmax: Math.max(...line.map(word => xmax(word))),
+      ymin: Math.min(...line.map(word => ymin(word))),
+      ymax: Math.min(...line.map(word => ymax(word))),
+    }
+  }
 
   function same_line(word, prev) {
     return ymin(word) < ymin(prev) || ymax(word) < ymax(prev) || ymin(word) < ymin(prev) + 0.4 * (ymax(prev) - ymin(word));
@@ -67,9 +98,10 @@ export function sliceFromOcr(response: any) {
   console.log(lines);
   let nodes: Node[] = [];
   for (let line of lines) {
-    let node = schema.node(
-      'line',
-      null,
+    let attrs = { box: box(line) };
+    // console.log(attrs);
+    let node = schema.nodes.line.create(
+      attrs,
       schema.text(line.map(word => word.description).join(' ')));
     nodes.push(node);
   }
