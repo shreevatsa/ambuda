@@ -104,7 +104,7 @@ export function sliceFromOcr(response: any) {
       xmin: Math.min(...line.map(word => xmin(word))),
       xmax: Math.max(...line.map(word => xmax(word))),
       ymin: Math.min(...line.map(word => ymin(word))),
-      ymax: Math.min(...line.map(word => ymax(word))),
+      ymax: Math.max(...line.map(word => ymax(word))),
     }
   }
 
@@ -117,15 +117,23 @@ export function sliceFromOcr(response: any) {
       continue;
     }
     let currentLine = lines[lines.length - 1];
-    let prev = currentLine[currentLine.length - 1];
-    if (same_line(word, prev)) {
+    if (currentLine.some(prev => same_line(word, prev))) {
       currentLine.push(word);
-      // console.log('Same line: ', word, prev);
-      continue;
+
+      // // This newly added word may be higher on the page than earlier words,
+      // // so we may also need to merge previously distinct lines.
+      // while (lines.length >= 2) {
+      //   if (lines[lines.length - 2].some(old => same_line(word, old))) {
+      //     lines[lines.length - 2].push(...lines[lines.length - 1]);
+      //     lines.pop();
+      //   } else {
+      //     break;
+      //   }
+      // }
+    } else {
+      // Otherwise, start a new line.
+      lines.push([word]);
     }
-    // console.log('Different lines: ', word, prev);
-    // Otherwise, start a new line.
-    lines.push([word]);
   }
   console.log(lines);
 
@@ -151,6 +159,7 @@ export function sliceFromOcr(response: any) {
   }
   const fullHeight = 4678;
   linesWithBox[linesWithBox.length - 1].box.ymax = fullHeight;
+  console.log(linesWithBox);
 
   let nodes: Node[] = [];
   for (let line of linesWithBox) {
