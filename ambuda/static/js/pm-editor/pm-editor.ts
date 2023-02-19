@@ -31,13 +31,45 @@ const schema = new Schema({
       parseDOM: [{ tag: 'p' }],
       toDOM(node) {
         // return ['p', 0] as DOMOutputSpec;
-        let p = document.createElement('p');
-        let text = '';
+        let ret = document.createElement('div');
+        ret.style.outline = '2px dotted grey';
         if (node.attrs.box != null) {
-          text = `[Box: ${printBox(node.attrs.box)}]`;
+          const box = node.attrs.box as Box;
+          const width = (box.xmax - box.xmin);
+          const fullWidth = 3309;
+          const height = (box.ymax - box.ymin);
+
+          // // Attempt 1
+          // let imgContainer = document.createElement('div');
+          // imgContainer.style.width = width + 'px';
+          // imgContainer.style.height = height + 'px';
+          // imgContainer.style.overflow = 'hidden';
+          // console.log(imgContainer);
+          // let img = document.createElement('img');
+          // img.src = '/static/uploads/epigramsbhartrhari/pages/129.jpg';
+          // let ratio = 2080 / 4678;
+          // img.style.marginLeft = -box.xmin * ratio + '';
+          // img.style.marginTop = -box.ymin * ratio + '';
+          // imgContainer.appendChild(img);
+          // ret.appendChild(imgContainer);
+
+          // Attempt 2
+          let foreground = document.createElement('div');
+          foreground.style.width = fullWidth + 'px';
+          foreground.style.width = width + 'px';
+          foreground.style.height = height + 'px';
+          foreground.style.backgroundImage = 'url("/static/uploads/epigramsbhartrhari/pages/129.jpg")';
+          foreground.style.backgroundRepeat = 'no-repeat';
+          foreground.style.backgroundPositionX = '0';
+          foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
+          foreground.style.backgroundPositionY = -box.ymin + 'px';
+          ret.appendChild(foreground);
         }
-        p.textContent = text + node.textContent;
-        return p;
+        let p = document.createElement('p');
+        p.textContent = node.textContent;
+        p.style.color = 'green';
+        ret.appendChild(p);
+        return ret;
       },
     },
     text: { inline: true },
@@ -96,13 +128,37 @@ export function sliceFromOcr(response: any) {
     lines.push([word]);
   }
   console.log(lines);
-  let nodes: Node[] = [];
+
+  let linesWithBox: { words: any[]; box: Box; }[] = [];
   for (let line of lines) {
-    let attrs = { box: box(line) };
+    linesWithBox.push({
+      words: line.map(word => word.description),
+      box: box(line),
+    });
+  };
+  // Distribute all the "missing" y-coordinates.
+  for (let i = 0; i < linesWithBox.length; ++i) {
+    if (i == 0) {
+      linesWithBox[i].box.ymin = 0;
+    } else {
+      const prev = linesWithBox[i - 1].box.ymax;
+      const cur = linesWithBox[i].box.ymin;
+      if (prev >= cur) continue;
+      const avg = prev + (cur - prev) / 2;
+      linesWithBox[i - 1].box.ymax = avg;
+      linesWithBox[i].box.ymin = avg;
+    }
+  }
+  const fullHeight = 4678;
+  linesWithBox[linesWithBox.length - 1].box.ymax = fullHeight;
+
+  let nodes: Node[] = [];
+  for (let line of linesWithBox) {
+    let attrs = { box: line.box };
     // console.log(attrs);
     let node = schema.nodes.line.create(
       attrs,
-      schema.text(line.map(word => word.description).join(' ')));
+      schema.text(line.words.join(' ')));
     nodes.push(node);
   }
 
