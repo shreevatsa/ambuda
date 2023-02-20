@@ -68,6 +68,7 @@ const schema = new Schema({
         let p = document.createElement('p');
         p.textContent = node.textContent;
         p.style.color = 'green';
+        p.contentEditable = 'true';
         ret.appendChild(p);
         return ret;
       },
