@@ -78,7 +78,7 @@ const schema = new Schema({
 });
 
 export function sliceFromOcr(response: any) {
-  console.log(response);
+  console.log('Creating slice from response', response);
   // An array of lines, where each line is an array of words.
   let lines: any[][] = [];
   // Crude line-breaking heuristic.
@@ -175,7 +175,7 @@ export function sliceFromOcr(response: any) {
   // const node: Node = schema.text(`(Not yet implemented: ${response.textAnnotations.length} annotations.)`);
   const fragment: Fragment = Fragment.from(nodes);
   const slice: Slice = new Slice(fragment, 0, 0);
-  return slice;
+  return new Slice([], 0, 0);
 }
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
