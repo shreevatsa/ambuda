@@ -3,6 +3,7 @@
 
 import { AllSelection } from 'prosemirror-state';
 import { $ } from './core.ts';
+import { createGoogleOcrResponseVisualizer } from './pm-editor/pm-editor';
 import { toText, createEditorFromTextAt, sliceFromOcr } from './pm-editor/pm-editor.ts';
 
 const CONFIG_KEY = 'proofing-editor';
@@ -152,6 +153,7 @@ export const Proofer = () => ({
       });
 
     console.log(content);
+    createGoogleOcrResponseVisualizer(document.getElementById('responseVisualizer'), content);
     // TODO: SPlit 
     // $('#content').value = content;
     // for (let w of content.textAnnotations.slice(1)) {

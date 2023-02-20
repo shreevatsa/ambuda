@@ -234,3 +234,48 @@ export function createEditorFromTextAt(text: string, parentNode: HTMLElement): E
   const view = new EditorView(parentNode, { state });
   return view;
 }
+
+export function createGoogleOcrResponseVisualizer(node: HTMLElement, response) {
+  console.log('response is', response);
+  function areArraysEqualAsSets(a: string[], b: string[]) {
+    return a.length === b.length && [...a].every(value => b.includes(value));
+  }
+  console.assert(areArraysEqualAsSets(Object.keys(response), ['textAnnotations', 'fullTextAnnotation']));
+
+  function createChild(node: HTMLElement, tagName: string) {
+    let ret = document.createElement(tagName);
+    node.appendChild(ret);
+    return ret;
+  }
+
+  let text0 = createChild(node, 'details');
+  createChild(text0, 'summary').innerText = 'textAnnotations[0].description';
+  createChild(text0, 'pre').innerText = response.textAnnotations[0].description;
+  response.textAnnotations.shift();
+
+  let textRest = createChild(node, 'details');
+  createChild(textRest, 'summary').innerText = 'textAnnotations[1..]';
+  // let textAnnotations = createChild(textRest, 'ol');
+  // textAnnotations.style.listStyleType = 'decimal';
+  // textAnnotations.style.paddingLeft = '3rem';
+  // for (let t of response.textAnnotations) {
+  //   createChild(textAnnotations, 'li').innerText = JSON.stringify(t);
+  // }
+  let textAnnotations = createChild(textRest, 'p');
+  for (let t of response.textAnnotations) {
+    let word = createChild(textAnnotations, 'span');
+    word.innerText = t.description + ' ';
+    word.dataset.boundingPolyVertices = JSON.stringify(t.boundingPoly.vertices);
+  }
+
+  let fullTextAnnotationText = createChild(node, 'details');
+  createChild(fullTextAnnotationText, 'summary').innerText = 'fullTextAnnotation.text';
+  createChild(fullTextAnnotationText, 'pre').innerText = response.fullTextAnnotation.text;
+
+  let fullTextAnnotationPages = createChild(node, 'details');
+  createChild(fullTextAnnotationPages, 'summary').innerText = 'fullTextAnnotation.pages';
+  let fullTextAnnotation = createChild(fullTextAnnotationPages, 'ol');
+  for (let p of response.fullTextAnnotation.pages) {
+    createChild(fullTextAnnotation, 'li').innerText = JSON.stringify(p);
+  }
+}

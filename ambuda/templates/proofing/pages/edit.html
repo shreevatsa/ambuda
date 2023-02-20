@@ -41,6 +41,8 @@
   <pre class="p-2 bg-slate-100 my-4">{{ conflict.content }}</pre>
   {% endif %}
 
+  <div id="responseVisualizer" class="text-yellow-800"></div>
+
   <form x-data="proofer" @submit="syncPMToTextarea" method="POST">
     {{ form.csrf_token }}
     {{ form.version }}
