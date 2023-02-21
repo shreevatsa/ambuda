@@ -78,16 +78,20 @@ const schema = new Schema({
 });
 
 function xmin(word) {
-  return Math.min(...word.boundingPoly.vertices.map(({ x: v }) => v));
+  let box = ('boundingPoly' in word) ? word.boundingPoly : word.boundingBox;
+  return Math.min(...box.vertices.map(({ x: v }) => v));
 }
 function xmax(word) {
-  return Math.max(...word.boundingPoly.vertices.map(({ x: v }) => v));
+  let box = ('boundingPoly' in word) ? word.boundingPoly : word.boundingBox;
+  return Math.max(...box.vertices.map(({ x: v }) => v));
 }
 function ymin(word) {
-  return Math.min(...word.boundingPoly.vertices.map(({ y: v }) => v));
+  let box = ('boundingPoly' in word) ? word.boundingPoly : word.boundingBox;
+  return Math.min(...box.vertices.map(({ y: v }) => v));
 }
 function ymax(word) {
-  return Math.max(...word.boundingPoly.vertices.map(({ y: v }) => v));
+  let box = ('boundingPoly' in word) ? word.boundingPoly : word.boundingBox;
+  return Math.max(...box.vertices.map(({ y: v }) => v));
 }
 
 export function sliceFromOcr(response: any) {
@@ -243,6 +247,22 @@ function createChild(node: HTMLElement, tagName: string) {
   return ret;
 }
 
+function makeHighlightFor(block: any, node: HTMLElement, OpenSeadragon, viewer, opacity: number) {
+  // Define the region to highlight with a rectangle
+  const x = xmin(block); // x-coordinate of the upper left corner of the rectangle
+  const y = ymin(block); // y-coordinate of the upper left corner of the rectangle
+  const width = xmax(block) - xmin(block); // width of the rectangle
+  const height = ymax(block) - ymin(block); // height of the rectangle
+  const boundingBox = new OpenSeadragon.Rect(x, y, width, height);
+  const viewportRect = viewer.viewport.imageToViewportRectangle(boundingBox);
+  // Create a new rectangle overlay
+  const box = document.createElement('div');
+  box.style.backgroundColor = 'red';
+  box.style.opacity = `${opacity}`;
+  node.addEventListener('mouseover', function () { viewer.addOverlay(box, viewportRect); });
+  node.addEventListener('mouseout', function () { viewer.removeOverlay(box); });
+}
+
 
 export function createGoogleOcrResponseVisualizer(node: HTMLElement,
   viewer,
@@ -254,11 +274,15 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
   }
   console.assert(areArraysEqualAsSets(Object.keys(response), ['textAnnotations', 'fullTextAnnotation']));
 
+  // Debugging the four ways to get text.
+
+  // Way 1: textAnnotations[0].description
   let text0 = createChild(node, 'details');
   createChild(text0, 'summary').innerText = 'textAnnotations[0].description';
   createChild(text0, 'pre').innerText = response.textAnnotations[0].description;
   response.textAnnotations.shift();
 
+  // Way 2: The rest textAnnotations
   let textRest = createChild(node, 'details');
   createChild(textRest, 'summary').innerText = 'textAnnotations[1..]';
   // let textAnnotations = createChild(textRest, 'ol');
@@ -267,37 +291,67 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
   // for (let t of response.textAnnotations) {
   //   createChild(textAnnotations, 'li').innerText = JSON.stringify(t);
   // }
-
   let textAnnotations = createChild(textRest, 'p');
   for (let t of response.textAnnotations) {
     let word = createChild(textAnnotations, 'span');
     word.innerText = t.description + ' ';
     word.dataset.boundingPolyVertices = JSON.stringify(t.boundingPoly.vertices);
-
-    // Define the region to highlight with a rectangle
-    const x = xmin(t); // x-coordinate of the upper left corner of the rectangle
-    const y = ymin(t); // y-coordinate of the upper left corner of the rectangle
-    const width = xmax(t) - xmin(t); // width of the rectangle
-    const height = ymax(t) - ymin(t); // height of the rectangle
-    const boundingBox = new OpenSeadragon.Rect(x, y, width, height);
-    const viewportRect = viewer.viewport.imageToViewportRectangle(boundingBox);
-
-    // Create a new rectangle overlay
-    const box = document.createElement('div');
-    box.style.backgroundColor = 'red';
-    box.style.opacity = '0.5';
-    word.addEventListener('mouseover', function () { console.log('Adding overlay', box, 'for', t); viewer.addOverlay(box, viewportRect); });
-    word.addEventListener('mouseout', function () { viewer.removeOverlay(box); });
+    makeHighlightFor(t, word, OpenSeadragon, viewer, 0.5);
   }
 
+  // Way 3: fullTextAnnotation.text
   let fullTextAnnotationText = createChild(node, 'details');
   createChild(fullTextAnnotationText, 'summary').innerText = 'fullTextAnnotation.text';
   createChild(fullTextAnnotationText, 'pre').innerText = response.fullTextAnnotation.text;
 
+  // Way 4: fullTextAnnotation.pages
   let fullTextAnnotationPages = createChild(node, 'details');
   createChild(fullTextAnnotationPages, 'summary').innerText = 'fullTextAnnotation.pages';
   let fullTextAnnotation = createChild(fullTextAnnotationPages, 'ol');
-  for (let p of response.fullTextAnnotation.pages) {
-    createChild(fullTextAnnotation, 'li').innerText = JSON.stringify(p);
+  fullTextAnnotation.style.listStyleType = 'devanagari';
+  fullTextAnnotation.style.paddingLeft = '3rem';
+  for (let page of response.fullTextAnnotation.pages) {
+    let blocks = createChild(createChild(fullTextAnnotation, 'li'), 'ol');
+    blocks.style.listStyleType = 'decimal'; // block
+    blocks.style.paddingLeft = '3rem';
+    for (let block of page.blocks) {
+      let paragraphs = createChild(createChild(blocks, 'li'), 'ol');
+      paragraphs.style.listStyleType = 'kannada'; // paragraph
+      paragraphs.style.paddingLeft = '3rem';
+      makeHighlightFor(block, paragraphs, OpenSeadragon, viewer, 0.2);
+      for (let paragraph of block.paragraphs) {
+        let words = createChild(createChild(paragraphs, 'li'), 'div');
+        makeHighlightFor(paragraph, words, OpenSeadragon, viewer, 0.4);
+        for (let word of paragraph.words) {
+          let symbols = createChild(words, 'span');
+          makeHighlightFor(word, symbols, OpenSeadragon, viewer, 0.6);
+          for (let symbol of word.symbols) {
+            let glyph = createChild(symbols, 'span');
+            makeHighlightFor(symbol, glyph, OpenSeadragon, viewer, 0.8);
+            glyph.innerText = symbol.text;
+            if ('property' in symbol && 'detectedBreak' in symbol.property) {
+              const detectedBreak = symbol.property.detectedBreak;
+              console.assert(!detectedBreak.isPrefix, `A prefix break: ${JSON.stringify(word)}`);
+
+              switch (detectedBreak.type) {
+                case 3: // EOL_SURE_SPACE
+                  createChild(symbols, 'br');
+                  break;
+                case 5: // LINE_BREAK
+                  createChild(symbols, 'br');
+                  break;
+                case 0: // UNKNOWN
+                case 1: // SPACE
+                case 2: // SURE_SPACE
+                case 4: // HYPHEN
+                  console.log(`A break not handled: ${JSON.stringify(detectedBreak)}`);
+                  break;
+              }
+            }
+          }
+          createChild(words, 'span').innerText = ' ';
+        }
+      }
+    }
   }
 }
