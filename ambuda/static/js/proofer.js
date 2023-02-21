@@ -69,7 +69,9 @@ export const Proofer = () => ({
     this.layoutClasses = this.getLayoutClasses();
 
     // Set `imageZoom` only after the viewer is fully initialized.
-    this.imageViewer = initializeImageViewer(IMAGE_URL);
+    const imageViewer = initializeImageViewer(IMAGE_URL);
+    this.imageViewer = imageViewer;
+    window.imageViewer = imageViewer;
     this.imageViewer.addHandler('open', () => {
       this.imageZoom = this.imageZoom || this.imageViewer.viewport.getHomeZoom();
       this.imageViewer.viewport.zoomTo(this.imageZoom);
@@ -153,7 +155,7 @@ export const Proofer = () => ({
       });
 
     console.log(content);
-    createGoogleOcrResponseVisualizer(document.getElementById('responseVisualizer'), content);
+    createGoogleOcrResponseVisualizer(document.getElementById('responseVisualizer'), this.imageViewer, OpenSeadragon, content);
     // TODO: SPlit 
     // $('#content').value = content;
     // for (let w of content.textAnnotations.slice(1)) {

@@ -77,6 +77,19 @@ const schema = new Schema({
   },
 });
 
+function xmin(word) {
+  return Math.min(...word.boundingPoly.vertices.map(({ x: v }) => v));
+}
+function xmax(word) {
+  return Math.max(...word.boundingPoly.vertices.map(({ x: v }) => v));
+}
+function ymin(word) {
+  return Math.min(...word.boundingPoly.vertices.map(({ y: v }) => v));
+}
+function ymax(word) {
+  return Math.max(...word.boundingPoly.vertices.map(({ y: v }) => v));
+}
+
 export function sliceFromOcr(response: any) {
   console.log('Creating slice from response', response);
   // An array of lines, where each line is an array of words.
@@ -88,18 +101,6 @@ export function sliceFromOcr(response: any) {
                 new.ymax < old.ymax or
                 new.ymin < old.ymin + threshold_fraction * (old.ymax - old.ymin))
   */
-  function xmin(word) {
-    return Math.min(...word.boundingPoly.vertices.map(({ x: v }) => v));
-  }
-  function xmax(word) {
-    return Math.max(...word.boundingPoly.vertices.map(({ x: v }) => v));
-  }
-  function ymin(word) {
-    return Math.min(...word.boundingPoly.vertices.map(({ y: v }) => v));
-  }
-  function ymax(word) {
-    return Math.max(...word.boundingPoly.vertices.map(({ y: v }) => v));
-  }
   function box(line): Box {
     return {
       xmin: Math.min(...line.map(word => xmin(word))),
@@ -173,9 +174,10 @@ export function sliceFromOcr(response: any) {
   }
 
   // const node: Node = schema.text(`(Not yet implemented: ${response.textAnnotations.length} annotations.)`);
-  const fragment: Fragment = Fragment.from(nodes);
+  // const fragment: Fragment = Fragment.from(nodes);
+  const fragment = Fragment.from(null);
   const slice: Slice = new Slice(fragment, 0, 0);
-  return new Slice([], 0, 0);
+  return slice;
 }
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
@@ -235,18 +237,22 @@ export function createEditorFromTextAt(text: string, parentNode: HTMLElement): E
   return view;
 }
 
-export function createGoogleOcrResponseVisualizer(node: HTMLElement, response) {
+function createChild(node: HTMLElement, tagName: string) {
+  let ret = document.createElement(tagName);
+  node.appendChild(ret);
+  return ret;
+}
+
+
+export function createGoogleOcrResponseVisualizer(node: HTMLElement,
+  viewer,
+  OpenSeadragon,
+  response: { textAnnotations?: any; fullTextAnnotation?: any; }) {
   console.log('response is', response);
   function areArraysEqualAsSets(a: string[], b: string[]) {
     return a.length === b.length && [...a].every(value => b.includes(value));
   }
   console.assert(areArraysEqualAsSets(Object.keys(response), ['textAnnotations', 'fullTextAnnotation']));
-
-  function createChild(node: HTMLElement, tagName: string) {
-    let ret = document.createElement(tagName);
-    node.appendChild(ret);
-    return ret;
-  }
 
   let text0 = createChild(node, 'details');
   createChild(text0, 'summary').innerText = 'textAnnotations[0].description';
@@ -261,11 +267,27 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement, response) {
   // for (let t of response.textAnnotations) {
   //   createChild(textAnnotations, 'li').innerText = JSON.stringify(t);
   // }
+
   let textAnnotations = createChild(textRest, 'p');
   for (let t of response.textAnnotations) {
     let word = createChild(textAnnotations, 'span');
     word.innerText = t.description + ' ';
     word.dataset.boundingPolyVertices = JSON.stringify(t.boundingPoly.vertices);
+
+    // Define the region to highlight with a rectangle
+    const x = xmin(t); // x-coordinate of the upper left corner of the rectangle
+    const y = ymin(t); // y-coordinate of the upper left corner of the rectangle
+    const width = xmax(t) - xmin(t); // width of the rectangle
+    const height = ymax(t) - ymin(t); // height of the rectangle
+    const boundingBox = new OpenSeadragon.Rect(x, y, width, height);
+    const viewportRect = viewer.viewport.imageToViewportRectangle(boundingBox);
+
+    // Create a new rectangle overlay
+    const box = document.createElement('div');
+    box.style.backgroundColor = 'red';
+    box.style.opacity = '0.5';
+    word.addEventListener('mouseover', function () { console.log('Adding overlay', box, 'for', t); viewer.addOverlay(box, viewportRect); });
+    word.addEventListener('mouseout', function () { viewer.removeOverlay(box); });
   }
 
   let fullTextAnnotationText = createChild(node, 'details');
