@@ -259,8 +259,22 @@ function makeHighlightFor(block: any, node: HTMLElement, OpenSeadragon, viewer, 
   const box = document.createElement('div');
   box.style.backgroundColor = 'red';
   box.style.opacity = `${opacity}`;
-  node.addEventListener('mouseover', function () { viewer.addOverlay(box, viewportRect); });
-  node.addEventListener('mouseout', function () { viewer.removeOverlay(box); });
+
+  // Create an overlay that's an arrow.
+  const point = new OpenSeadragon.Point(x, y);
+  const location = viewer.viewport.imageToViewportCoordinates(point);
+  const arrow = document.createElement('span');
+  arrow.innerText = '↘';
+  arrow.style.color = 'purple';
+
+  node.addEventListener('mouseover', function () {
+    viewer.addOverlay(box, viewportRect);
+    viewer.addOverlay(arrow, location, OpenSeadragon.Placement.BOTTOM_RIGHT);
+  });
+  node.addEventListener('mouseout', function () {
+    viewer.removeOverlay(box);
+    viewer.removeOverlay(arrow);
+  });
 }
 
 
@@ -318,16 +332,16 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
       let paragraphs = createChild(createChild(blocks, 'li'), 'ol');
       paragraphs.style.listStyleType = 'kannada'; // paragraph
       paragraphs.style.paddingLeft = '3rem';
-      makeHighlightFor(block, paragraphs, OpenSeadragon, viewer, 0.2);
+      makeHighlightFor(block, paragraphs, OpenSeadragon, viewer, 0.1);
       for (let paragraph of block.paragraphs) {
         let words = createChild(createChild(paragraphs, 'li'), 'div');
-        makeHighlightFor(paragraph, words, OpenSeadragon, viewer, 0.4);
+        makeHighlightFor(paragraph, words, OpenSeadragon, viewer, 0.3);
         for (let word of paragraph.words) {
           let symbols = createChild(words, 'span');
-          makeHighlightFor(word, symbols, OpenSeadragon, viewer, 0.6);
+          makeHighlightFor(word, symbols, OpenSeadragon, viewer, 0.5);
           for (let symbol of word.symbols) {
             let glyph = createChild(symbols, 'span');
-            makeHighlightFor(symbol, glyph, OpenSeadragon, viewer, 0.8);
+            makeHighlightFor(symbol, glyph, OpenSeadragon, viewer, 0.7);
             glyph.innerText = symbol.text;
             if ('property' in symbol && 'detectedBreak' in symbol.property) {
               const detectedBreak = symbol.property.detectedBreak;
