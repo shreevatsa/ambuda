@@ -58,7 +58,7 @@ const schema = new Schema({
           foreground.style.width = fullWidth + 'px';
           foreground.style.width = width + 'px';
           foreground.style.height = height + 'px';
-          foreground.style.backgroundImage = 'url("/static/uploads/epigramsbhartrhari/pages/129.jpg")';
+          foreground.style.backgroundImage = 'url("/static/uploads/epigramsbhartrhari/pages/130.jpg")';
           foreground.style.backgroundRepeat = 'no-repeat';
           foreground.style.backgroundPositionX = '0';
           foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
@@ -271,6 +271,7 @@ function makeHighlightFor(block: any, node: HTMLElement, OpenSeadragon, viewer, 
   const location = viewer.viewport.imageToViewportCoordinates(point);
   const arrow = document.createElement('span');
   arrow.innerText = '↘';
+  arrow.style.fontSize = '5rem';
   arrow.style.color = 'purple';
 
   node.addEventListener('mouseover', function () {
@@ -372,10 +373,15 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
                 case 5: // LINE_BREAK
                   createChild(symbols, 'br');
                   break;
+                case 4: // HYPHEN
+                  const hyphen = createChild(symbols, 'span');
+                  // TODO: Think about this further. `textAnnotations` simply omits these hyphens.
+                  hyphen.innerText = ' AAAAAA - HHHHYYYPPPHHHEEENNN';
+                  createChild(symbols, 'br');
+                  break;
                 case 0: // UNKNOWN
                 case 1: // SPACE
                 case 2: // SURE_SPACE
-                case 4: // HYPHEN
                   console.log(`A break not handled: ${JSON.stringify(detectedBreak)}`);
                   break;
               }

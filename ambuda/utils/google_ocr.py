@@ -196,17 +196,15 @@ def run2(file_path: Path) -> OcrResponse:
     import os.path, json, os
     if os.path.isfile(cache_filename):
         c = json.load(open(cache_filename))
-        c = json.loads(c)
         clean_google_ocr_response(c)
-        c = json.dumps(c)
-        return c
+        return json.dumps(c)
 
     client = vision.ImageAnnotatorClient()
     image = prepare_image(file_path)
     response = client.document_text_detection(image=image)
     # import ipdb
     # ipdb.set_trace()
-    ret = AnnotateImageResponse.to_json(response)
+    ret = json.loads(AnnotateImageResponse.to_json(response))
     clean_google_ocr_response(ret)
     os.makedirs(cache_dir, exist_ok=True)
     json.dump(ret, open(cache_filename, 'w'))
