@@ -117,7 +117,10 @@ export function sliceFromOcr(response: any) {
   function same_line(word, prev) {
     return ymin(word) < ymin(prev) || ymax(word) < ymax(prev) || ymin(word) < ymin(prev) + 0.4 * (ymax(prev) - ymin(word));
   }
-  for (let word of response.textAnnotations.slice(1)) {
+
+  let words = JSON.parse(JSON.stringify(response.textAnnotations.slice(1)));
+  words.sort((w1, w2) => ymin(w1) - ymin(w2));
+  for (let word of words) {
     if (lines.length == 0) {
       lines.push([word]);
       continue;
@@ -141,7 +144,10 @@ export function sliceFromOcr(response: any) {
       lines.push([word]);
     }
   }
-  console.log(lines);
+  for (let line of lines) {
+    line.sort((w1, w2) => xmin(w1) - xmin(w2));
+  }
+  console.log('lines:', lines);
 
   let linesWithBox: { words: any[]; box: Box; }[] = [];
   for (let line of lines) {
@@ -178,8 +184,8 @@ export function sliceFromOcr(response: any) {
   }
 
   // const node: Node = schema.text(`(Not yet implemented: ${response.textAnnotations.length} annotations.)`);
-  // const fragment: Fragment = Fragment.from(nodes);
-  const fragment = Fragment.from(null);
+  const fragment: Fragment = Fragment.from(nodes);
+  // const fragment = Fragment.from(null);
   const slice: Slice = new Slice(fragment, 0, 0);
   return slice;
 }
@@ -294,7 +300,6 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
   let text0 = createChild(node, 'details');
   createChild(text0, 'summary').innerText = 'textAnnotations[0].description';
   createChild(text0, 'pre').innerText = response.textAnnotations[0].description;
-  response.textAnnotations.shift();
 
   // Way 2: The rest textAnnotations
   let textRest = createChild(node, 'details');
@@ -306,8 +311,21 @@ export function createGoogleOcrResponseVisualizer(node: HTMLElement,
   //   createChild(textAnnotations, 'li').innerText = JSON.stringify(t);
   // }
   let textAnnotations = createChild(textRest, 'p');
-  for (let t of response.textAnnotations) {
+  for (let t of response.textAnnotations.slice(1)) {
     let word = createChild(textAnnotations, 'span');
+    word.innerText = t.description + ' ';
+    word.dataset.boundingPolyVertices = JSON.stringify(t.boundingPoly.vertices);
+    makeHighlightFor(t, word, OpenSeadragon, viewer, 0.5);
+  }
+
+  // Way 2.5: The rest of textAnnotations, sorted
+  let textRest2 = createChild(node, 'details');
+  createChild(textRest2, 'summary').innerText = 'textAnnotations[1..].sort()';
+  let textAnnotations2 = createChild(textRest2, 'p');
+  const words = JSON.parse(JSON.stringify(response.textAnnotations.slice(1)));
+  words.sort((w1, w2) => ymin(w1) - ymin(w2));
+  for (let t of words) {
+    let word = createChild(textAnnotations2, 'span');
     word.innerText = t.description + ' ';
     word.dataset.boundingPolyVertices = JSON.stringify(t.boundingPoly.vertices);
     makeHighlightFor(t, word, OpenSeadragon, viewer, 0.5);
