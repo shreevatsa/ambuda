@@ -166,7 +166,7 @@ export const Proofer = () => ({
     // console.log(state.schema.text(content));
     let { tr } = state;
     tr = tr.setSelection(new AllSelection(state.doc));
-    tr.replaceSelection(sliceFromOcr(content));
+    tr.replaceSelection(sliceFromOcr(content, IMAGE_URL));
     this.editorView().dispatch(tr);
     this.editorView().focus();
     this.isRunningOCR = false;

@@ -22,11 +22,13 @@ const schema = new Schema({
   nodes: {
     // The document (page) is a nonempty sequence of lines.
     doc: { content: 'line+' },
-    // A line contains text. Represented in the DOM as a `<p>` element.
+    // A line contains text.
+    // // Represented in the DOM as a `<line>` element. Is this ok? https://stackoverflow.com/questions/10830682/is-it-ok-to-use-unknown-html-tags
     line: {
       content: 'text*',
       attrs: {
         box: { default: null },
+        pageImageUrl: { default: null },
       },
       parseDOM: [{ tag: 'p' }],
       toDOM(node) {
@@ -35,30 +37,13 @@ const schema = new Schema({
         ret.style.outline = '2px dotted grey';
         if (node.attrs.box != null) {
           const box = node.attrs.box as Box;
-          const width = (box.xmax - box.xmin);
-          const fullWidth = 3309;
-          const height = (box.ymax - box.ymin);
-
-          // // Attempt 1
-          // let imgContainer = document.createElement('div');
-          // imgContainer.style.width = width + 'px';
-          // imgContainer.style.height = height + 'px';
-          // imgContainer.style.overflow = 'hidden';
-          // console.log(imgContainer);
-          // let img = document.createElement('img');
-          // img.src = '/static/uploads/epigramsbhartrhari/pages/129.jpg';
-          // let ratio = 2080 / 4678;
-          // img.style.marginLeft = -box.xmin * ratio + '';
-          // img.style.marginTop = -box.ymin * ratio + '';
-          // imgContainer.appendChild(img);
-          // ret.appendChild(imgContainer);
 
           // Attempt 2
           let foreground = document.createElement('div');
-          foreground.style.width = fullWidth + 'px';
-          foreground.style.width = width + 'px';
-          foreground.style.height = height + 'px';
-          foreground.style.backgroundImage = 'url("/static/uploads/epigramsbhartrhari/pages/130.jpg")';
+          // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
+          foreground.style.width = (box.xmax - box.xmin) + 'px';
+          foreground.style.height = (box.ymax - box.ymin) + 'px';
+          foreground.style.backgroundImage = `url("${node.attrs.pageImageUrl}")`;
           foreground.style.backgroundRepeat = 'no-repeat';
           foreground.style.backgroundPositionX = '0';
           foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
@@ -94,7 +79,7 @@ function ymax(word) {
   return Math.max(...box.vertices.map(({ y: v }) => v));
 }
 
-export function sliceFromOcr(response: any) {
+export function sliceFromOcr(response: any, imageUrl: string) {
   console.log('Creating slice from response', response);
   // An array of lines, where each line is an array of words.
   let lines: any[][] = [];
@@ -175,7 +160,7 @@ export function sliceFromOcr(response: any) {
 
   let nodes: Node[] = [];
   for (let line of linesWithBox) {
-    let attrs = { box: line.box };
+    let attrs = { box: line.box, pageImageUrl: imageUrl };
     // console.log(attrs);
     let node = schema.nodes.line.create(
       attrs,
