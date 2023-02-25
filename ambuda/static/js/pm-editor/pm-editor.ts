@@ -29,7 +29,7 @@ class LineView {
     if (node.attrs.box != null) {
       const box = node.attrs.box as Box;
       // The dummy div node that has the line's image region as the background.
-      let foreground = document.createElement('div');
+      let foreground = createChild(ret, 'div');
       // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
       foreground.style.width = (box.xmax - box.xmin) + 'px';
       foreground.style.height = (box.ymax - box.ymin) + 'px';
@@ -38,11 +38,9 @@ class LineView {
       foreground.style.backgroundPositionX = '0';
       foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
       foreground.style.backgroundPositionY = -box.ymin + 'px';
-      ret.appendChild(foreground);
     }
-    const p = document.createElement('p');
+    const p = createChild(ret, 'p') as HTMLParagraphElement;
     p.style.color = 'green';
-    ret.appendChild(p);
     this.contentDOM = p;
   }
 }
@@ -185,9 +183,8 @@ function docFromText(text: string): Node {
   const dom = document.createElement('div');
   // The "-1" is so that empty lines are retained: https://stackoverflow.com/q/14602062
   text.split(/(?:\r\n?|\n)/, -1).forEach((line) => {
-    const p = dom.appendChild(document.createElement('p'));
+    const p = createChild(dom, 'p');
     p.appendChild(document.createTextNode(line));
-    dom.appendChild(p);
   });
   const ret = DOMParser.fromSchema(schema).parse(dom, { preserveWhitespace: 'full' });
   return ret;
@@ -244,6 +241,8 @@ export function createEditorFromTextAt(text: string, parentNode: HTMLElement): E
 }
 
 function createChild(node: HTMLElement, tagName: string) {
+  // This function could just be:
+  // return node.appendChild(document.createElement(tagName));
   let ret = document.createElement(tagName);
   node.appendChild(ret);
   return ret;
