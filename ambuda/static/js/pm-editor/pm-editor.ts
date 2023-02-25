@@ -18,6 +18,35 @@ function printBox(box: Box) {
   return `[${box.xmin}..${box.xmax}]×[${box.ymin}..${box.ymax}]`;
 }
 
+class LineView {
+  dom: HTMLDivElement;
+  contentDOM: HTMLDivElement;
+  constructor(node: Node) {
+    this.dom = document.createElement('div');
+    const ret = this.dom;
+    ret.style.outline = '2px dotted grey';
+    // The image of the line
+    if (node.attrs.box != null) {
+      const box = node.attrs.box as Box;
+      // The dummy div node that has the line's image region as the background.
+      let foreground = document.createElement('div');
+      // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
+      foreground.style.width = (box.xmax - box.xmin) + 'px';
+      foreground.style.height = (box.ymax - box.ymin) + 'px';
+      foreground.style.backgroundImage = `url("${node.attrs.pageImageUrl}")`;
+      foreground.style.backgroundRepeat = 'no-repeat';
+      foreground.style.backgroundPositionX = '0';
+      foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
+      foreground.style.backgroundPositionY = -box.ymin + 'px';
+      ret.appendChild(foreground);
+    }
+    const p = document.createElement('p');
+    p.style.color = 'green';
+    ret.appendChild(p);
+    this.contentDOM = p;
+  }
+}
+
 const schema = new Schema({
   nodes: {
     // The document (page) is a nonempty sequence of lines.
@@ -31,32 +60,6 @@ const schema = new Schema({
         pageImageUrl: { default: null },
       },
       parseDOM: [{ tag: 'p' }],
-      toDOM(node) {
-        // return ['p', 0] as DOMOutputSpec;
-        let ret = document.createElement('div');
-        ret.style.outline = '2px dotted grey';
-        if (node.attrs.box != null) {
-          const box = node.attrs.box as Box;
-
-          // Attempt 2
-          let foreground = document.createElement('div');
-          // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
-          foreground.style.width = (box.xmax - box.xmin) + 'px';
-          foreground.style.height = (box.ymax - box.ymin) + 'px';
-          foreground.style.backgroundImage = `url("${node.attrs.pageImageUrl}")`;
-          foreground.style.backgroundRepeat = 'no-repeat';
-          foreground.style.backgroundPositionX = '0';
-          foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
-          foreground.style.backgroundPositionY = -box.ymin + 'px';
-          ret.appendChild(foreground);
-        }
-        let p = document.createElement('p');
-        p.textContent = node.textContent;
-        p.style.color = 'green';
-        p.contentEditable = 'true';
-        ret.appendChild(p);
-        return ret;
-      },
     },
     text: { inline: true },
   },
@@ -228,7 +231,15 @@ export function createEditorFromTextAt(text: string, parentNode: HTMLElement): E
     ],
   });
   // Display the editor.
-  const view = new EditorView(parentNode, { state });
+  const view = new EditorView(
+    parentNode,
+    {
+      state,
+      nodeViews: {
+        line(node) { return new LineView(node) }
+      }
+    }
+  );
   return view;
 }
 
