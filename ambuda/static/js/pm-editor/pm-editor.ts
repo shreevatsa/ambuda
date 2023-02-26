@@ -38,6 +38,7 @@ class LineView {
       foreground.style.backgroundPositionX = '0';
       foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
       foreground.style.backgroundPositionY = -box.ymin + 'px';
+      foreground.classList.add('page-image-region');
     }
     const p = createChild(ret, 'p') as HTMLParagraphElement;
     p.style.color = 'green';
