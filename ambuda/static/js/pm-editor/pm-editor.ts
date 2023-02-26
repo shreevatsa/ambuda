@@ -178,6 +178,10 @@ export function sliceFromOcr(response: any, imageUrl: string) {
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
 function docFromText(text: string): Node {
+  try {
+    const json = JSON.parse(text);
+    return Node.fromJSON(schema, json);
+  } catch (e) { }
   // Could create it manually with schema.node() and schema.text(),
   // but can also turn into div and parse it.
   const dom = document.createElement('div');
@@ -193,6 +197,7 @@ function docFromText(text: string): Node {
 // Serializes the EditorState (assuming the schema above) into a plain text string.
 export function toText(view: EditorView): string {
   const doc = view.state.doc.toJSON();
+  return JSON.stringify(doc);
   /*
     The JSON looks like:
           {
@@ -214,7 +219,7 @@ export function toText(view: EditorView): string {
           }
     etc.
   */
-  return doc.content.map((line) => (line.content ? line.content[0].text : '')).join('\n');
+  // return doc.content.map((line) => (line.content ? line.content[0].text : '')).join('\n');
 }
 
 // Creates editor with contents from `text`, appends it to `parentNode`. Returns its EditorView.
