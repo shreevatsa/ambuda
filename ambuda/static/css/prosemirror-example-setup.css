@@ -26,10 +26,6 @@ https://github.com/ProseMirror/prosemirror-view/blob/c47178c/style/prosemirror.c
   position: relative;
 }
 
-.ProseMirror .page-image-region {
-  transform: scale(0.5);
-}
-
 .ProseMirror-hideselection *::selection { background: transparent; }
 .ProseMirror-hideselection *::-moz-selection { background: transparent; }
 .ProseMirror-hideselection { caret-color: transparent; }

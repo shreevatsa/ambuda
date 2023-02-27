@@ -21,7 +21,7 @@ function printBox(box: Box) {
 class LineView {
   dom: HTMLDivElement;
   contentDOM: HTMLDivElement;
-  constructor(node: Node) {
+  constructor(node: Node, opts: { pageImageUrl: any; }) {
     this.dom = document.createElement('div');
     const ret = this.dom;
     ret.style.outline = '2px dotted grey';
@@ -29,13 +29,21 @@ class LineView {
     if (node.attrs.box != null) {
       const box = node.attrs.box as Box;
       // The dummy div node that has the line's image region as the background.
-      let foreground = createChild(ret, 'div');
+      const width = (box.xmax - box.xmin);
+      const height = (box.ymax - box.ymin);
+      let wrapper = createChild(ret, 'div');
+      const scale = 0.2;
+      wrapper.style.width = width * scale + 'px';
+      wrapper.style.height = height * scale + 'px';
+      let foreground = createChild(wrapper, 'div');
       // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
-      foreground.style.width = (box.xmax - box.xmin) + 'px';
-      foreground.style.height = (box.ymax - box.ymin) + 'px';
-      foreground.style.backgroundImage = `url("${node.attrs.pageImageUrl}")`;
+      foreground.style.width = width + 'px';
+      foreground.style.height = height + 'px';
+      foreground.style.backgroundImage = `url("${opts.pageImageUrl}")`;
       foreground.style.backgroundRepeat = 'no-repeat';
       foreground.style.backgroundPositionX = '0';
+      foreground.style.transform = `scale(${scale})`;
+      foreground.style.transformOrigin = 'top left';
       foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
       foreground.style.backgroundPositionY = -box.ymin + 'px';
       foreground.classList.add('page-image-region');
@@ -49,14 +57,18 @@ class LineView {
 const schema = new Schema({
   nodes: {
     // The document (page) is a nonempty sequence of lines.
-    doc: { content: 'line+' },
+    doc: {
+      content: 'line+',
+      attrs: {
+        pageImageUrl: { default: null },
+      }
+    },
     // A line contains text.
     // // Represented in the DOM as a `<line>` element. Is this ok? https://stackoverflow.com/questions/10830682/is-it-ok-to-use-unknown-html-tags
     line: {
       content: 'text*',
       attrs: {
         box: { default: null },
-        pageImageUrl: { default: null },
       },
       parseDOM: [{ tag: 'p' }],
     },
@@ -81,7 +93,7 @@ function ymax(word) {
   return Math.max(...box.vertices.map(({ y: v }) => v));
 }
 
-export function sliceFromOcr(response: any, imageUrl: string) {
+export function sliceFromOcr(response: any) {
   console.log('Creating slice from response', response);
   // An array of lines, where each line is an array of words.
   let lines: any[][] = [];
@@ -162,7 +174,7 @@ export function sliceFromOcr(response: any, imageUrl: string) {
 
   let nodes: Node[] = [];
   for (let line of linesWithBox) {
-    let attrs = { box: line.box, pageImageUrl: imageUrl };
+    let attrs = { box: line.box };
     // console.log(attrs);
     let node = schema.nodes.line.create(
       attrs,
@@ -178,7 +190,7 @@ export function sliceFromOcr(response: any, imageUrl: string) {
 }
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
-function docFromText(text: string): Node {
+function docFromText(text: string, imageUrl: string): Node {
   try {
     const json = JSON.parse(text);
     return Node.fromJSON(schema, json);
@@ -191,8 +203,12 @@ function docFromText(text: string): Node {
     const p = createChild(dom, 'p');
     p.appendChild(document.createTextNode(line));
   });
-  const ret = DOMParser.fromSchema(schema).parse(dom, { preserveWhitespace: 'full' });
-  return ret;
+  const node = DOMParser.fromSchema(schema).parse(dom, { preserveWhitespace: 'full' });
+  const doc = schema.nodes.doc.createChecked(
+    { pageImageUrl: imageUrl },
+    node.content,
+  );
+  return doc;
 }
 
 // Serializes the EditorState (assuming the schema above) into a plain text string.
@@ -224,9 +240,9 @@ export function toText(view: EditorView): string {
 }
 
 // Creates editor with contents from `text`, appends it to `parentNode`. Returns its EditorView.
-export function createEditorFromTextAt(text: string, parentNode: HTMLElement): EditorView {
+export function createEditorFromTextAt(text: string, imageUrl: string, parentNode: HTMLElement): EditorView {
   const state = EditorState.create({
-    doc: docFromText(text),
+    doc: docFromText(text, imageUrl),
     plugins: [
       history(),
       keymap({ 'Mod-z': undo, 'Mod-y': redo }),
@@ -239,7 +255,9 @@ export function createEditorFromTextAt(text: string, parentNode: HTMLElement): E
     {
       state,
       nodeViews: {
-        line(node) { return new LineView(node) }
+        line(node) {
+          return new LineView(node, { pageImageUrl: state.doc.attrs.pageImageUrl })
+        }
       }
     }
   );

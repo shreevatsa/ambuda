@@ -77,7 +77,10 @@ export const Proofer = () => ({
       this.imageViewer.viewport.zoomTo(this.imageZoom);
     });
 
-    const view = createEditorFromTextAt(document.querySelector('textarea').value, document.getElementById('editor'));
+    const view = createEditorFromTextAt(
+      document.querySelector('textarea').value,
+      IMAGE_URL,
+      document.getElementById('editor'));
     this.editorView = () => view;
     window.view = this.editorView();
     this.editorView().focus();
@@ -166,7 +169,7 @@ export const Proofer = () => ({
     // console.log(state.schema.text(content));
     let { tr } = state;
     tr = tr.setSelection(new AllSelection(state.doc));
-    tr.replaceSelection(sliceFromOcr(content, IMAGE_URL));
+    tr.replaceSelection(sliceFromOcr(content));
     this.editorView().dispatch(tr);
     this.editorView().focus();
     this.isRunningOCR = false;
