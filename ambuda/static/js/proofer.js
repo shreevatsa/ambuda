@@ -4,7 +4,7 @@
 import { AllSelection } from 'prosemirror-state';
 import { $ } from './core.ts';
 import { createGoogleOcrResponseVisualizer } from './pm-editor/pm-editor';
-import { toText, createEditorFromTextAt, sliceFromOcr } from './pm-editor/pm-editor.ts';
+import { toText, createEditorFromTextAt, sliceFromOcr, setImageZoomInEditor } from './pm-editor/pm-editor.ts';
 
 const CONFIG_KEY = 'proofing-editor';
 
@@ -52,6 +52,7 @@ export const Proofer = () => ({
   // Settings
   textZoom: 1,
   imageZoom: null,
+  imageZoomInEditor: 0.5,
   layout: 'side-by-side',
   // [transliteration] the source script
   fromScript: 'hk',
@@ -80,6 +81,7 @@ export const Proofer = () => ({
     const view = createEditorFromTextAt(
       document.querySelector('textarea').value,
       IMAGE_URL,
+      this.imageZoomInEditor,
       document.getElementById('editor'));
     this.editorView = () => view;
     window.view = this.editorView();
@@ -101,6 +103,7 @@ export const Proofer = () => ({
         // We can only get an accurate default zoom after the viewer is fully
         // initialized. See `init` for details.
         this.imageZoom = settings.imageZoom;
+        this.imageZoomInEditor = settings.imageZoomInEditor || this.imageZoomInEditor;
         this.layout = settings.layout || this.layout;
 
         this.fromScript = settings.fromScript || this.fromScript;
@@ -115,6 +118,7 @@ export const Proofer = () => ({
     const settings = {
       textZoom: this.textZoom,
       imageZoom: this.imageZoom,
+      imageZoomInEditor: this.imageZoomInEditor,
       layout: this.layout,
       fromScript: this.fromScript,
       toScript: this.toScript,
@@ -201,6 +205,27 @@ export const Proofer = () => ({
   },
   decreaseTextSize() {
     this.textZoom = Math.max(0, this.textZoom - 0.2);
+    this.saveSettings();
+  },
+
+  increaseImageZoomInEditor() {
+    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', this.imageZoomInEditor + 0.125);
+    this.imageZoomInEditor += 0.125;
+    setImageZoomInEditor(this.editorView(), this.imageZoomInEditor);
+    this.saveSettings();
+  },
+
+  decreaseImageZoomInEditor() {
+    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', this.imageZoomInEditor - 0.125);
+    this.imageZoomInEditor -= 0.125;
+    setImageZoomInEditor(this.editorView(), this.imageZoomInEditor);
+    this.saveSettings();
+  },
+
+  resetImageZoomInEditor() {
+    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', 0.5);
+    this.imageZoomInEditor = 0.5;
+    setImageZoomInEditor(this.editorView(), this.imageZoomInEditor);
     this.saveSettings();
   },
 

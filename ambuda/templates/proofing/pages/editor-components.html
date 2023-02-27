@@ -235,6 +235,9 @@ Pass `class` explicitly so that Tailwind can regex-find it when it compiles. #}
     <div>
       {{ alpine_button("A<sup>+</sup>", "increaseTextSize") }}
       {{ alpine_button("A<sup>-</sup>", "decreaseTextSize") }}
+      {{ alpine_button("L<sup>+</sup>", "increaseImageZoomInEditor") }}
+      {{ alpine_button("L&#x00b0;", "resetImageZoomInEditor") }}
+      {{ alpine_button("L<sup>-</sup>", "decreaseImageZoomInEditor") }}
     </div>
   </div>
   <textarea id="content" name="content" style="display: none">{{ data }}</textarea>

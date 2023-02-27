@@ -6,6 +6,51 @@ import {
 import { keymap } from 'prosemirror-keymap';
 import { undo, redo, history } from 'prosemirror-history';
 import { baseKeymap } from 'prosemirror-commands';
+import { Step, StepResult } from 'prosemirror-transform';
+
+// https://discuss.prosemirror.net/t/changing-doc-attrs/784
+class SetDocAttrStep extends Step {
+  stepType: string;
+  key: string;
+  value: any;
+  prevValue: any;
+  constructor(key: string, value: any, stepType: string = 'SetDocAttr') {
+    super();
+    this.stepType = stepType;
+    this.key = key;
+    this.value = value;
+  }
+  apply(doc: Node) {
+    const newAttrs = Object.assign(doc.attrs, { [this.key]: this.value });
+    console.log('In SetDocAttrStep apply: Creating doc with attrs', newAttrs);
+    const newDoc = schema.nodes.doc.createChecked(
+      newAttrs,
+      doc.content,
+    );
+    return StepResult.ok(newDoc);
+  }
+
+  invert() {
+    return new SetDocAttrStep(this.key, this.prevValue, 'revertSetDocAttr');
+  }
+
+  map() {
+    // position never changes so map should always return same step
+    return this;
+  }
+  toJSON() {
+    return {
+      stepType: this.stepType,
+      key: this.key,
+      value: this.value,
+    };
+  }
+  static fromJSON(json) {
+    return new SetDocAttrStep(json.key, json.value, json.stepType);
+  }
+}
+
+
 
 type Box = {
   xmin: number,
@@ -18,10 +63,12 @@ function printBox(box: Box) {
   return `[${box.xmin}..${box.xmax}]×[${box.ymin}..${box.ymax}]`;
 }
 
+
 class LineView {
   dom: HTMLDivElement;
   contentDOM: HTMLDivElement;
-  constructor(node: Node, opts: { pageImageUrl: any; }) {
+  constructor(node: Node, opts) {
+    console.log('In LineView constructor with opts', opts);
     this.dom = document.createElement('div');
     const ret = this.dom;
     ret.style.outline = '2px dotted grey';
@@ -32,7 +79,7 @@ class LineView {
       const width = (box.xmax - box.xmin);
       const height = (box.ymax - box.ymin);
       let wrapper = createChild(ret, 'div');
-      const scale = 0.2;
+      const scale = opts.scale;
       wrapper.style.width = width * scale + 'px';
       wrapper.style.height = height * scale + 'px';
       let foreground = createChild(wrapper, 'div');
@@ -61,6 +108,7 @@ const schema = new Schema({
       content: 'line+',
       attrs: {
         pageImageUrl: { default: null },
+        imageZoomInEditor: { default: null },
       }
     },
     // A line contains text.
@@ -190,7 +238,7 @@ export function sliceFromOcr(response: any) {
 }
 
 // Turns `text` into a `Document` corresponding to our schema. Just splits on line breaks.
-function docFromText(text: string, imageUrl: string): Node {
+function docFromText(text: string, imageUrl: string, imageZoomInEditor: number): Node {
   try {
     const json = JSON.parse(text);
     return Node.fromJSON(schema, json);
@@ -205,7 +253,10 @@ function docFromText(text: string, imageUrl: string): Node {
   });
   const node = DOMParser.fromSchema(schema).parse(dom, { preserveWhitespace: 'full' });
   const doc = schema.nodes.doc.createChecked(
-    { pageImageUrl: imageUrl },
+    {
+      pageImageUrl: imageUrl,
+      imageZoomInEditor: imageZoomInEditor,
+    },
     node.content,
   );
   return doc;
@@ -240,9 +291,9 @@ export function toText(view: EditorView): string {
 }
 
 // Creates editor with contents from `text`, appends it to `parentNode`. Returns its EditorView.
-export function createEditorFromTextAt(text: string, imageUrl: string, parentNode: HTMLElement): EditorView {
+export function createEditorFromTextAt(text: string, imageUrl: string, imageZoomInEditor: number, parentNode: HTMLElement): EditorView {
   const state = EditorState.create({
-    doc: docFromText(text, imageUrl),
+    doc: docFromText(text, imageUrl, imageZoomInEditor),
     plugins: [
       history(),
       keymap({ 'Mod-z': undo, 'Mod-y': redo }),
@@ -256,12 +307,24 @@ export function createEditorFromTextAt(text: string, imageUrl: string, parentNod
       state,
       nodeViews: {
         line(node) {
-          return new LineView(node, { pageImageUrl: state.doc.attrs.pageImageUrl })
+          // TODO: This always uses the state at the time the editor is created. Fix!
+          console.log('Going to create new LineView, using scale', state.doc.attrs.imageZoomInEditor);
+          return new LineView(node, {
+            pageImageUrl: state.doc.attrs.pageImageUrl,
+            scale: state.doc.attrs.imageZoomInEditor,
+          })
         }
       }
     }
   );
   return view;
+}
+
+export function setImageZoomInEditor(view: EditorView, scale: number) {
+  console.log('Trying to set scale to ', scale);
+  // TODO: This should be editor props, rather than editing doc.
+  const tr = view.state.tr.step(new SetDocAttrStep('imageZoomInEditor', scale));
+  view.dispatch(tr);
 }
 
 function createChild(node: HTMLElement, tagName: string) {
