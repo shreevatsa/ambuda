@@ -209,15 +209,17 @@ export const Proofer = () => ({
   },
 
   increaseImageZoomInEditor() {
-    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', this.imageZoomInEditor + 0.125);
-    this.imageZoomInEditor += 0.125;
+    const after = this.imageZoomInEditor * 1.0625;
+    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', after);
+    this.imageZoomInEditor = after;
     setImageZoomInEditor(this.editorView(), this.imageZoomInEditor);
     this.saveSettings();
   },
 
   decreaseImageZoomInEditor() {
-    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', this.imageZoomInEditor - 0.125);
-    this.imageZoomInEditor -= 0.125;
+    const after = this.imageZoomInEditor / 1.0625;
+    console.log('Button clicked: changing imageZoomInEditor from ', this.imageZoomInEditor, ' to ', after);
+    this.imageZoomInEditor = after;
     setImageZoomInEditor(this.editorView(), this.imageZoomInEditor);
     this.saveSettings();
   },
