@@ -67,8 +67,10 @@ function printBox(box: Box) {
 class LineView {
   dom: HTMLDivElement;
   contentDOM: HTMLDivElement;
-  constructor(node: Node, opts) {
-    console.log('In LineView constructor with opts', opts);
+  constructor(node: Node, view: EditorView) {
+    const pageImageUrl = view.state.doc.attrs.pageImageUrl;
+    const scale = view.state.doc.attrs.imageZoomInEditor;
+    console.log('In LineView constructor with scale', scale);
     this.dom = document.createElement('div');
     const ret = this.dom;
     ret.style.outline = '2px dotted grey';
@@ -79,14 +81,13 @@ class LineView {
       const width = (box.xmax - box.xmin);
       const height = (box.ymax - box.ymin);
       let wrapper = createChild(ret, 'div');
-      const scale = opts.scale;
       wrapper.style.width = width * scale + 'px';
       wrapper.style.height = height * scale + 'px';
       let foreground = createChild(wrapper, 'div');
       // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
       foreground.style.width = width + 'px';
       foreground.style.height = height + 'px';
-      foreground.style.backgroundImage = `url("${opts.pageImageUrl}")`;
+      foreground.style.backgroundImage = `url("${pageImageUrl}")`;
       foreground.style.backgroundRepeat = 'no-repeat';
       foreground.style.backgroundPositionX = '0';
       foreground.style.transform = `scale(${scale})`;
@@ -306,14 +307,7 @@ export function createEditorFromTextAt(text: string, imageUrl: string, imageZoom
     {
       state,
       nodeViews: {
-        line(node) {
-          // TODO: This always uses the state at the time the editor is created. Fix!
-          console.log('Going to create new LineView, using scale', state.doc.attrs.imageZoomInEditor);
-          return new LineView(node, {
-            pageImageUrl: state.doc.attrs.pageImageUrl,
-            scale: state.doc.attrs.imageZoomInEditor,
-          })
-        }
+        line(node, view) { return new LineView(node, view) }
       }
     }
   );
