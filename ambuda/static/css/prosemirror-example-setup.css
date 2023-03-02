@@ -70,7 +70,7 @@ img.ProseMirror-separator {
 
 line {
   display: block;
-  border: 1px solid silver;
+  border: 1px dotted silver;
   border-radius: 3px;
   padding: 3px 6px;
   margin: 5px 0;
@@ -93,19 +93,19 @@ line {
 
 lgHeader,
 lgHeader line {
-  border-color: #66f;
-  color: lightgrey;
-  font-weight: 200;
+  border-color: grey;
+  color: grey;
+  font-weight: 300;
 }
 
 lgVerse,
 lgVerse line {
   border-color: #a00;
-  color: black;
+  color: #a00;
 }
 
 lgFootnote,
 lgFootnote line {
-  border-color: #0a0;
+  border-color: blue;
   color: blue;
 }
