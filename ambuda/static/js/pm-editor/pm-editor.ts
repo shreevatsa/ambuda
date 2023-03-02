@@ -6,7 +6,7 @@ import {
 import { keymap } from 'prosemirror-keymap';
 import { undo, redo, history } from 'prosemirror-history';
 import { baseKeymap } from 'prosemirror-commands';
-import { Step, StepResult } from 'prosemirror-transform';
+import { Step, StepResult, findWrapping } from 'prosemirror-transform';
 
 // https://discuss.prosemirror.net/t/changing-doc-attrs/784
 class SetDocAttrStep extends Step {
@@ -59,11 +59,6 @@ type Box = {
   ymax: number
 };
 
-function printBox(box: Box) {
-  return `[${box.xmin}..${box.xmax}]×[${box.ymin}..${box.ymax}]`;
-}
-
-
 class LineView {
   dom: HTMLDivElement;
   contentDOM: HTMLDivElement;
@@ -71,9 +66,8 @@ class LineView {
     const pageImageUrl = view.state.doc.attrs.pageImageUrl;
     const scale = view.state.doc.attrs.imageZoomInEditor;
     console.log('In LineView constructor with scale', scale);
-    this.dom = document.createElement('div');
+    this.dom = document.createElement('line') as HTMLDivElement;
     const ret = this.dom;
-    ret.style.outline = '2px dotted grey';
     // The image of the line
     if (node.attrs.box != null) {
       const box = node.attrs.box as Box;
@@ -97,21 +91,28 @@ class LineView {
       foreground.classList.add('page-image-region');
     }
     const p = createChild(ret, 'p') as HTMLParagraphElement;
-    p.style.color = 'green';
     this.contentDOM = p;
   }
 }
 
+function makeLineGroup(state, dispatch, groupType) {
+  // Get a range around the selected blocks
+  let range = state.selection.$from.blockRange(state.selection.$to)
+  // See if it is possible to wrap that range in a note group
+  let wrapping = findWrapping(range, groupType)
+  if (!wrapping) return false
+  // Dispatch a transaction, using the `wrap` method to create the step that does the actual wrapping.
+  if (dispatch) dispatch(state.tr.wrap(range, wrapping).scrollIntoView())
+  return true
+}
+function makeLgHeader(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgHeader) }
+function makeLgVerse(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgVerse) }
+function makeLgParagraph(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgParagraph) }
+function makeLgFootnote(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgFootnote) }
+
 const schema = new Schema({
   nodes: {
-    // The document (page) is a nonempty sequence of lines.
-    doc: {
-      content: 'line+',
-      attrs: {
-        pageImageUrl: { default: null },
-        imageZoomInEditor: { default: null },
-      }
-    },
+    text: { inline: true },
     // A line contains text.
     // // Represented in the DOM as a `<line>` element. Is this ok? https://stackoverflow.com/questions/10830682/is-it-ok-to-use-unknown-html-tags
     line: {
@@ -121,7 +122,36 @@ const schema = new Schema({
       },
       parseDOM: [{ tag: 'p' }],
     },
-    text: { inline: true },
+    // Various groupings of lines.
+    // TODO(shreevatsa): Consider making this a single linegroup node with varying attrs.
+    lgHeader: {
+      content: "line+",
+      toDOM() { return ["lgHeader", 0] },
+      parseDOM: [{ tag: "lgHeader" }]
+    },
+    lgVerse: {
+      content: "line+",
+      toDOM() { return ["lgVerse", 0] },
+      parseDOM: [{ tag: "lgVerse" }]
+    },
+    lgParagraph: {
+      content: "line+",
+      toDOM() { return ["lgParagraph", 0] },
+      parseDOM: [{ tag: "lgParagraph" }]
+    },
+    lgFootnote: {
+      content: "line+",
+      toDOM() { return ["lgFootnote", 0] },
+      parseDOM: [{ tag: "lgFootnote" }]
+    },
+    // The document (page) is a nonempty sequence of lines.
+    doc: {
+      content: "(line | lgHeader | lgVerse | lgParagraph | lgFootnote)+",
+      attrs: {
+        pageImageUrl: { default: null },
+        imageZoomInEditor: { default: null },
+      }
+    },
   },
 });
 
@@ -253,6 +283,7 @@ function docFromText(text: string, imageUrl: string, imageZoomInEditor: number):
     p.appendChild(document.createTextNode(line));
   });
   const node = DOMParser.fromSchema(schema).parse(dom, { preserveWhitespace: 'full' });
+  console.log('Creating doc with pageImageUrl', imageUrl);
   const doc = schema.nodes.doc.createChecked(
     {
       pageImageUrl: imageUrl,
@@ -299,6 +330,12 @@ export function createEditorFromTextAt(text: string, imageUrl: string, imageZoom
       history(),
       keymap({ 'Mod-z': undo, 'Mod-y': redo }),
       keymap(baseKeymap),
+      keymap({
+        'Ctrl-h': makeLgHeader,
+        'Ctrl-v': makeLgVerse,
+        'Ctrl-p': makeLgParagraph,
+        'Ctrl-f': makeLgFootnote,
+      })
     ],
   });
   // Display the editor.

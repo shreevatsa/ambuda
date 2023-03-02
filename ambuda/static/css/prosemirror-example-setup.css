@@ -1,6 +1,6 @@
 .ProseMirror {
-    padding: 4px 8px;
-    height: 100%;
+  padding: 4px 8px;
+  height: 100%;
 }
 
 /* From https://cdn.jsdelivr.net/npm/prosemirror-view@1.27.0/style/prosemirror.css =
@@ -15,7 +15,8 @@ https://github.com/ProseMirror/prosemirror-view/blob/c47178c/style/prosemirror.c
   white-space: break-spaces;
   -webkit-font-variant-ligatures: none;
   font-variant-ligatures: none;
-  font-feature-settings: "liga" 0; /* the above doesn't seem to work in Edge */
+  font-feature-settings: "liga" 0;
+  /* the above doesn't seem to work in Edge */
 }
 
 .ProseMirror pre {
@@ -26,9 +27,17 @@ https://github.com/ProseMirror/prosemirror-view/blob/c47178c/style/prosemirror.c
   position: relative;
 }
 
-.ProseMirror-hideselection *::selection { background: transparent; }
-.ProseMirror-hideselection *::-moz-selection { background: transparent; }
-.ProseMirror-hideselection { caret-color: transparent; }
+.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.ProseMirror-hideselection *::-moz-selection {
+  background: transparent;
+}
+
+.ProseMirror-hideselection {
+  caret-color: transparent;
+}
 
 .ProseMirror-selectednode {
   outline: 2px solid #8cf;
@@ -44,7 +53,9 @@ li.ProseMirror-selectednode:after {
   content: "";
   position: absolute;
   left: -32px;
-  right: -2px; top: -2px; bottom: -2px;
+  right: -2px;
+  top: -2px;
+  bottom: -2px;
   border: 2px solid #8cf;
   pointer-events: none;
 }
@@ -55,4 +66,46 @@ img.ProseMirror-separator {
   display: inline !important;
   border: none !important;
   margin: 0 !important;
+}
+
+line {
+  display: block;
+  border: 1px solid silver;
+  border-radius: 3px;
+  padding: 3px 6px;
+  margin: 5px 0;
+}
+
+lgHeader,
+lgVerse,
+lgParagraph,
+lgFootnote {
+  display: block;
+  border: 2px solid silver;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 10px 0;
+}
+
+line {
+  color: green;
+}
+
+lgHeader,
+lgHeader line {
+  border-color: #66f;
+  color: lightgrey;
+  font-weight: 200;
+}
+
+lgVerse,
+lgVerse line {
+  border-color: #a00;
+  color: black;
+}
+
+lgFootnote,
+lgFootnote line {
+  border-color: #0a0;
+  color: blue;
 }
