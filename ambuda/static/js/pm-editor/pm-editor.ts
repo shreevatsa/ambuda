@@ -1,7 +1,7 @@
 import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import {
-  DOMOutputSpec, DOMParser, Fragment, Node, Schema, Slice,
+  DOMOutputSpec, DOMParser, Fragment, Node, NodeType, Schema, Slice,
 } from 'prosemirror-model';
 import { keymap } from 'prosemirror-keymap';
 import { undo, redo, history } from 'prosemirror-history';
@@ -95,12 +95,16 @@ class LineView {
   }
 }
 
-function makeLineGroup(state, dispatch, groupType) {
+function makeLineGroup(state, dispatch, groupType: NodeType) {
   // Get a range around the selected blocks
-  let range = state.selection.$from.blockRange(state.selection.$to)
+  const range = state.selection.$from.blockRange(state.selection.$to)
   // See if it is possible to wrap that range in a note group
   let wrapping = findWrapping(range, groupType)
   if (!wrapping) return false
+  // Now that we know it can be wrapped, create it again with a name.
+  const groupName = prompt("Name for this group?");
+  const attrs = { groupName: groupName };
+  wrapping = findWrapping(range, groupType, attrs);
   // Dispatch a transaction, using the `wrap` method to create the step that does the actual wrapping.
   if (dispatch) dispatch(state.tr.wrap(range, wrapping).scrollIntoView())
   return true
@@ -126,21 +130,25 @@ const schema = new Schema({
     // TODO(shreevatsa): Consider making this a single linegroup node with varying attrs.
     lgHeader: {
       content: "line+",
+      attrs: { groupName: { default: null }, },
       toDOM() { return ["lgHeader", 0] },
       parseDOM: [{ tag: "lgHeader" }]
     },
     lgVerse: {
       content: "line+",
+      attrs: { groupName: { default: null }, },
       toDOM() { return ["lgVerse", 0] },
       parseDOM: [{ tag: "lgVerse" }]
     },
     lgParagraph: {
       content: "line+",
+      attrs: { groupName: { default: null }, },
       toDOM() { return ["lgParagraph", 0] },
       parseDOM: [{ tag: "lgParagraph" }]
     },
     lgFootnote: {
       content: "line+",
+      attrs: { groupName: { default: null }, },
       toDOM() { return ["lgFootnote", 0] },
       parseDOM: [{ tag: "lgFootnote" }]
     },
