@@ -114,6 +114,11 @@ function makeLgVerse(state, dispatch) { return makeLineGroup(state, dispatch, sc
 function makeLgParagraph(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgParagraph) }
 function makeLgFootnote(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgFootnote) }
 
+function lgToDom(node: Node, tagNameForLg: string): DOMOutputSpec {
+  // <tagNameForLg> <div>(groupname)</div> <div>(contents)</div> </tagNameForLg>
+  return [tagNameForLg, { style: "display: flex" }, ["div", node.attrs.groupName || ''], ["div", 0]];
+}
+
 const schema = new Schema({
   nodes: {
     text: { inline: true },
@@ -131,25 +136,25 @@ const schema = new Schema({
     lgHeader: {
       content: "line+",
       attrs: { groupName: { default: null }, },
-      toDOM() { return ["lgHeader", 0] },
+      toDOM(node) { return lgToDom(node, "lgHeader") },
       parseDOM: [{ tag: "lgHeader" }]
     },
     lgVerse: {
       content: "line+",
       attrs: { groupName: { default: null }, },
-      toDOM() { return ["lgVerse", 0] },
+      toDOM(node) { return lgToDom(node, "lgVerse") },
       parseDOM: [{ tag: "lgVerse" }]
     },
     lgParagraph: {
       content: "line+",
       attrs: { groupName: { default: null }, },
-      toDOM() { return ["lgParagraph", 0] },
+      toDOM(node) { return lgToDom(node, "lgParagraph") },
       parseDOM: [{ tag: "lgParagraph" }]
     },
     lgFootnote: {
       content: "line+",
       attrs: { groupName: { default: null }, },
-      toDOM() { return ["lgFootnote", 0] },
+      toDOM(node) { return lgToDom(node, "lgFootnote") },
       parseDOM: [{ tag: "lgFootnote" }]
     },
     // The document (page) is a nonempty sequence of lines.
