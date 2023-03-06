@@ -17,7 +17,6 @@ for page_id in page_ids:
         content = json.loads(content)
     except json.decoder.JSONDecodeError:
         continue
-    print('\n' * 20)
     assert content['type'] == 'doc'
     groups = content['content']
     for group in groups:
