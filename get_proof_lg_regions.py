@@ -47,7 +47,7 @@ for name, regions in regions_for_name.items():
         n = region['page_id'] - 1
         x = region['xmin'] / totWidth; x = int(x * 100) / 100
         y = region['ymin'] / totHeight; y = int(y * 100) / 100
-        w = region['width'] / totWidth; w = int(w * 100) / 100 + 0.1
+        w = region['width'] / totWidth; w = int(w * 100) / 100 + 0.01
         h = region['height'] / totHeight; h = int(h * 1000) / 1000 + 0.001
         url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
         urls.append(url)
