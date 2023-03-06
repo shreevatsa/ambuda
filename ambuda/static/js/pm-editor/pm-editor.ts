@@ -65,7 +65,7 @@ class LineView {
   constructor(node: Node, view: EditorView) {
     const pageImageUrl = view.state.doc.attrs.pageImageUrl;
     const scale = view.state.doc.attrs.imageZoomInEditor;
-    console.log('In LineView constructor with scale', scale);
+    // console.log('In LineView constructor with scale', scale);
     this.dom = document.createElement('line') as HTMLDivElement;
     const ret = this.dom;
     // The image of the line
