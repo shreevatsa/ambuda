@@ -33,7 +33,7 @@ for page_id in page_ids:
             xmax = max(xmax, box['xmax'])
             ymin = min(ymin, box['ymin'])
             ymax = max(ymax, box['ymax'])
-        regions_for_name[name].append({'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax})
+        regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax})
 
 for name, regions in regions_for_name.items():
     print(name, regions)
