@@ -27,13 +27,16 @@ for page_id in page_ids:
         xmax = -math.inf
         ymin = math.inf
         ymax = -math.inf
+        text = []
         for line in group['content']:
+            for actual_line in line['content']:
+                text.append(actual_line['text'])
             box = line['attrs']['box']
             xmin = min(xmin, box['xmin'])
             xmax = max(xmax, box['xmax'])
             ymin = min(ymin, box['ymin'])
             ymax = max(ymax, box['ymax'])
-        regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'ymin': ymin, 'width': xmax - xmin, 'height': ymax - ymin})
+        regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'ymin': ymin, 'width': xmax - xmin, 'height': ymax - ymin, 'text': text})
 
 # for name, regions in regions_for_name.items():
 #     print(name, regions)
@@ -54,7 +57,7 @@ header = '''
 print(header)
 
 for name, regions in sorted(regions_for_name.items()):
-    urls = []
+    blocks = []
     for region in regions:
         n = region['page_id'] - 1
         x = region['xmin'] / totWidth; x = int(x * 100) / 100
@@ -63,12 +66,23 @@ for name, regions in sorted(regions_for_name.items()):
         h = region['height'] / totHeight; h = int(h * 1000) / 1000 + 0.005
         image_url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
         page_url = f'https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/2up'
-        urls.append((image_url, page_url))
+        text = region['text']
+        blocks.append((image_url, page_url, text))
     # print(name, urls)
     
     # Generate HTML for this name
     s = f'<p>{name}</p>\n'
-    for (image_url, page_url) in urls:
+    t = ''
+    for (image_url, page_url, text) in blocks:
         s += f'<a href="{page_url}"><img src={image_url} class="w-11/12 md:w-9/12 border-2 rounded-md my-2"></a>\n'
-    s = f'<div class="border-2 rounded-lg m-2 md:m-10">{s}</div>\n'
+        for line in text:
+            t += f'<p>{line}</p>\n'
+    s = f'''
+    <div class="border-2 rounded-lg m-2 md:m-10">{s}
+    <details>
+    <summary>(not proofread)</summary>
+    {t}
+    </details>
+    </div>
+    '''
     print(s)
