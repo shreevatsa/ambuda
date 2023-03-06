@@ -33,7 +33,20 @@ for page_id in page_ids:
             xmax = max(xmax, box['xmax'])
             ymin = min(ymin, box['ymin'])
             ymax = max(ymax, box['ymax'])
-        regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax})
+        regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'ymin': ymin, 'width': xmax - xmin, 'height': ymax - ymin})
 
 for name, regions in regions_for_name.items():
     print(name, regions)
+
+ratio = 1.5
+for name, regions in regions_for_name.items():
+    urls = []
+    for region in regions:
+        n = region['page_id'] - 1
+        x = int(region['xmin'] * ratio) - 1
+        y = int(region['ymin'] * ratio) - 1
+        w = int(region['width'] * ratio) + 2
+        h = int(region['height'] * ratio) + 2
+        url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
+        urls.append(url)
+    print(name, urls)
