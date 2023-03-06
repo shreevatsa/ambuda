@@ -38,15 +38,17 @@ for page_id in page_ids:
 for name, regions in regions_for_name.items():
     print(name, regions)
 
-ratio = 1.5
+# TODO(shreevatsa): Remove this hard-coding. Get page dimensions from `content` (after saving it there).
+totWidth = 3309.0
+totHeight = 4678.0
 for name, regions in regions_for_name.items():
     urls = []
     for region in regions:
         n = region['page_id'] - 1
-        x = int(region['xmin'] * ratio) - 1
-        y = int(region['ymin'] * ratio) - 1
-        w = int(region['width'] * ratio) + 2
-        h = int(region['height'] * ratio) + 2
+        x = region['xmin'] / totWidth
+        y = region['ymin'] / totHeight
+        w = region['width'] / totWidth
+        h = region['height'] / totHeight
         url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
         urls.append(url)
     print(name, urls)
