@@ -35,20 +35,40 @@ for page_id in page_ids:
             ymax = max(ymax, box['ymax'])
         regions_for_name[name].append({'page_id': page_id, 'xmin': xmin, 'ymin': ymin, 'width': xmax - xmin, 'height': ymax - ymin})
 
-for name, regions in regions_for_name.items():
-    print(name, regions)
+# for name, regions in regions_for_name.items():
+#     print(name, regions)
 
 # TODO(shreevatsa): Remove this hard-coding. Get page dimensions from `content` (after saving it there).
 totWidth = 3309.0
 totHeight = 4678.0
-for name, regions in regions_for_name.items():
+
+header = '''
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+'''
+print(header)
+
+for name, regions in sorted(regions_for_name.items()):
     urls = []
     for region in regions:
         n = region['page_id'] - 1
         x = region['xmin'] / totWidth; x = int(x * 100) / 100
-        y = region['ymin'] / totHeight; y = int(y * 100) / 100
-        w = region['width'] / totWidth; w = int(w * 100) / 100 + 0.01
-        h = region['height'] / totHeight; h = int(h * 1000) / 1000 + 0.001
-        url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
-        urls.append(url)
-    print(name, urls)
+        y = region['ymin'] / totHeight; y = int(y * 1000) / 1000
+        w = region['width'] / totWidth; w = int(w * 100) / 100 + 0.02
+        h = region['height'] / totHeight; h = int(h * 1000) / 1000 + 0.005
+        image_url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
+        page_url = f'https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/2up'
+        urls.append((image_url, page_url))
+    # print(name, urls)
+    
+    # Generate HTML for this name
+    s = f'<p>{name}</p>\n'
+    for (image_url, page_url) in urls:
+        s += f'<a href="{page_url}"><img src={image_url} class="w-11/12 md:w-9/12 border-2 rounded-md my-2"></a>\n'
+    s = f'<div class="border-2 rounded-lg m-2 md:m-10">{s}</div>\n'
+    print(s)
