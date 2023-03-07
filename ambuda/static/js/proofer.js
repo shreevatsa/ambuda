@@ -86,6 +86,9 @@ export const Proofer = () => ({
     this.editorView = () => view;
     window.view = this.editorView();
     this.editorView().focus();
+    if (view.state.doc.content.content.length == 1) {
+      this.runOCR();
+    }
 
     // Use `.bind(this)` so that `this` in the function refers to this app and
     // not `window`.
