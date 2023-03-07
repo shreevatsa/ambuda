@@ -90,7 +90,7 @@ for name, regions in sorted(regions_for_name.items()):
         for line in text:
             t += f'<p>{line}</p>\n'
     s = f'''
-    <div class="border-2 rounded-lg m-2 md:m-10">{s}
+    <div class="border-2 rounded-lg border-blue-500 m-2 md:m-10">{s}
     <details>
     <summary>(not proofread)</summary>
     {t}
