@@ -165,7 +165,7 @@ export const Proofer = () => ({
       });
 
     console.log(content);
-    createGoogleOcrResponseVisualizer(document.getElementById('responseVisualizer'), this.imageViewer, OpenSeadragon, content);
+    // createGoogleOcrResponseVisualizer(document.getElementById('responseVisualizer'), this.imageViewer, OpenSeadragon, content);
     // TODO: SPlit 
     // $('#content').value = content;
     // for (let w of content.textAnnotations.slice(1)) {

@@ -47,13 +47,13 @@
     {{ form.csrf_token }}
     {{ form.version }}
 
-    {% if not has_edits %}
+    <!-- {% if not has_edits %}
       {# i18n: This should match the "Tools" and "Run OCR" translations in the proofing tool. #}
       {% set command = _("Tools &rarr; Run OCR") %}
       {% call mc.p_note() %}{% trans %}
       This page has not been edited yet. Run <i>{{ command }}</i> to get started.
       {% endtrans %}{% endcall %}
-    {% endif %}
+    {% endif %} -->
 
     {{ editor.menu_bar() }}
     <div :class="layoutClasses">
