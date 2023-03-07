@@ -2,6 +2,10 @@ import collections
 import json
 import math
 import sqlite3
+import sys
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 regions_for_name = collections.defaultdict(list)
 
@@ -23,6 +27,14 @@ for page_id in page_ids:
         if not('attrs' in group and 'groupName' in group['attrs']): continue
         name = group['attrs']['groupName']
         if name is None: continue
+        assert group['type'] in ('lgFootnote', 'lgVerse'), group['type']
+        # Normalize name
+        i = min([i for i in range(len(name)) if not str.isdigit(name[i])] + [len(name)])
+        assert name[i:] in ('', 'f')
+        new_name = f'{int(name[:i]):03}' + ('f' if group['type'] == 'lgFootnote' else '')
+        eprint(f'Converted {name} to {new_name}')
+        name = new_name
+
         xmin = math.inf
         xmax = -math.inf
         ymin = math.inf
