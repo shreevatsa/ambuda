@@ -78,16 +78,17 @@ class LineView {
       wrapper.style.width = width * scale + 'px';
       wrapper.style.height = height * scale + 'px';
       let foreground = createChild(wrapper, 'div');
-      // foreground.style.width = 3309 + 'px'; // Full width: show the entire line
-      foreground.style.width = width + 'px';
       foreground.style.height = height + 'px';
+      foreground.style.backgroundPositionY = -box.ymin + 'px';
+      // foreground.style.width = width + 'px';
+      // foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
+      foreground.style.width = '3309px';
+      foreground.style.backgroundPositionX = '0px';
       foreground.style.backgroundImage = `url("${pageImageUrl}")`;
       foreground.style.backgroundRepeat = 'no-repeat';
       foreground.style.backgroundPositionX = '0';
       foreground.style.transform = `scale(${scale})`;
       foreground.style.transformOrigin = 'top left';
-      foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
-      foreground.style.backgroundPositionY = -box.ymin + 'px';
       foreground.classList.add('page-image-region');
     }
     const p = createChild(ret, 'p') as HTMLParagraphElement;
@@ -187,6 +188,10 @@ function ymax(word) {
 
 export function sliceFromOcr(response: any) {
   console.log('Creating slice from response', response);
+  const fullHeight = response.fullTextAnnotation.pages[0].height;
+  console.assert(fullHeight == 4678);
+  // const fullWidth = response.fullTextAnnotation.pages[0].width;
+  // console.assert(fullWidth == 3309);
   // An array of lines, where each line is an array of words.
   let lines: any[][] = [];
   // Crude line-breaking heuristic.
@@ -265,8 +270,6 @@ export function sliceFromOcr(response: any) {
     linesWithBox[i - 1].box.ymax = avg;
     linesWithBox[i].box.ymin = avg;
   }
-  const fullHeight = response.fullTextAnnotation.pages[0].height;
-  console.assert(fullHeight == 4678);
   if (linesWithBox.length > 1) {
     const lastBox = linesWithBox[linesWithBox.length - 1].box;
     if (lastBox.ymax < fullHeight) {
