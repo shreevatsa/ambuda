@@ -240,7 +240,7 @@ export function sliceFromOcr(response: any) {
   }
   console.log('lines:', lines);
 
-  let linesWithBox: { words: any[]; box: Box; }[] = [];
+  let linesWithBox: { words: string[]; box: Box; }[] = [];
   for (let line of lines) {
     linesWithBox.push({
       words: line.map(word => word.description),
@@ -248,20 +248,34 @@ export function sliceFromOcr(response: any) {
     });
   };
   // Distribute all the "missing" y-coordinates.
-  for (let i = 0; i < linesWithBox.length; ++i) {
-    if (i == 0) {
-      linesWithBox[i].box.ymin = 0;
-    } else {
-      const prev = linesWithBox[i - 1].box.ymax;
-      const cur = linesWithBox[i].box.ymin;
-      if (prev >= cur) continue;
-      const avg = prev + (cur - prev) / 2;
-      linesWithBox[i - 1].box.ymax = avg;
-      linesWithBox[i].box.ymin = avg;
+  if (linesWithBox.length > 0) {
+    const box0 = linesWithBox[0].box;
+    if (box0.ymin > 0) {
+      linesWithBox.unshift({
+        words: [' '],
+        box: { xmin: box0.xmin, xmax: box0.xmax, ymin: 0, ymax: box0.ymin }
+      });
     }
   }
-  const fullHeight = 4678;
-  linesWithBox[linesWithBox.length - 1].box.ymax = fullHeight;
+  for (let i = 1; i < linesWithBox.length; ++i) {
+    const prev = linesWithBox[i - 1].box.ymax;
+    const cur = linesWithBox[i].box.ymin;
+    if (prev >= cur) continue;
+    const avg = prev + (cur - prev) / 2;
+    linesWithBox[i - 1].box.ymax = avg;
+    linesWithBox[i].box.ymin = avg;
+  }
+  const fullHeight = response.fullTextAnnotation.pages[0].height;
+  console.assert(fullHeight == 4678);
+  if (linesWithBox.length > 1) {
+    const lastBox = linesWithBox[linesWithBox.length - 1].box;
+    if (lastBox.ymax < fullHeight) {
+      linesWithBox.push({
+        words: [' '],
+        box: { xmin: lastBox.xmin, xmax: lastBox.xmax, ymin: lastBox.ymax, ymax: fullHeight },
+      });
+    }
+  }
   console.log(linesWithBox);
 
   let nodes: Node[] = [];
