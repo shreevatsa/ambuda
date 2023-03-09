@@ -71,18 +71,18 @@ class LineView {
     // The image of the line
     if (node.attrs.box != null) {
       const box = node.attrs.box as Box;
-      // The dummy div node that has the line's image region as the background.
-      const width = (box.xmax - box.xmin);
+      // TODO(shreevatsa): Revert this hack (and the backgroundPositionX below).
+      const width = 3309; // (box.xmax - box.xmin);
       const height = (box.ymax - box.ymin);
       let wrapper = createChild(ret, 'div');
       wrapper.style.width = width * scale + 'px';
       wrapper.style.height = height * scale + 'px';
+      // The dummy div node that has the line's image region as the background.
       let foreground = createChild(wrapper, 'div');
       foreground.style.height = height + 'px';
       foreground.style.backgroundPositionY = -box.ymin + 'px';
-      // foreground.style.width = width + 'px';
+      foreground.style.width = width + 'px';
       // foreground.style.backgroundPositionX = -(box.xmin - 10) + 'px';
-      foreground.style.width = '3309px';
       foreground.style.backgroundPositionX = '0px';
       foreground.style.backgroundImage = `url("${pageImageUrl}")`;
       foreground.style.backgroundRepeat = 'no-repeat';
