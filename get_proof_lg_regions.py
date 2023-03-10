@@ -70,7 +70,7 @@ print(header)
 
 names = list(sorted(regions_for_name.keys()))
 expected = []
-for n in range(1, 135): expected.extend([f'{n:03}', f'{n:03}f'])
+for n in range(1, 170): expected.extend([f'{n:03}', f'{n:03}f'])
 try:
     assert names == expected, (names, 'vs', expected)
 except AssertionError:
@@ -85,7 +85,7 @@ for name, regions in sorted(regions_for_name.items()):
         y = region['ymin'] / totHeight; y = int(y * 1000) / 1000
         w = region['width'] / totWidth; w = int(w * 100) / 100 + 0.02
         h = region['height'] / totHeight; h = int(h * 1000) / 1000 + 0.005
-        image_url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}.jpg'
+        image_url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}_s12.jpg'
         page_url = f'https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/2up'
         text = region['text']
         blocks.append((image_url, page_url, text))
