@@ -68,6 +68,15 @@ header = '''
 '''
 print(header)
 
+names = list(sorted(regions_for_name.keys()))
+expected = []
+for n in range(1, 135): expected.extend([f'{n:03}', f'{n:03}f'])
+try:
+    assert names == expected, (names, 'vs', expected)
+except AssertionError:
+    i = min(i for i in range(len(names)) if names[i] != expected[i])
+    assert False, (names[i:], '\nvs\n', expected[i:])
+
 for name, regions in sorted(regions_for_name.items()):
     blocks = []
     for region in regions:
