@@ -380,10 +380,10 @@ export function createEditorFromTextAt(text: string, imageUrl: string, imageZoom
       keymap({
         'Ctrl-h': makeLgHeader,
         'Ctrl-v': makeLgVerseAutoIncrement,
-        'Ctrl-b': makeLgVerse,
+        'Ctrl-V': makeLgVerse,
         'Ctrl-p': makeLgParagraph,
         'Ctrl-f': makeLgFootnoteAutoIncrement,
-        'Ctrl-g': makeLgFootnote,
+        'Ctrl-F': makeLgFootnote,
       })
     ],
   });

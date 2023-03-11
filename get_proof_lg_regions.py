@@ -27,6 +27,9 @@ for page_id in page_ids:
         if not('attrs' in group and 'groupName' in group['attrs']): continue
         name = group['attrs']['groupName']
         if name is None: continue
+        if group['type'] == 'lgHeader':
+            if name == '': continue
+            eprint(name)
         assert group['type'] in ('lgFootnote', 'lgVerse'), group['type']
         # Normalize name
         i = min([i for i in range(len(name)) if not str.isdigit(name[i])] + [len(name)])
@@ -70,7 +73,7 @@ print(header)
 
 names = list(sorted(regions_for_name.keys()))
 expected = []
-for n in range(1, 181): expected.extend([f'{n:03}', f'{n:03}f'])
+for n in range(1, 276): expected.extend([f'{n:03}', f'{n:03}f'])
 try:
     assert names == expected, (names, 'vs', expected)
 except AssertionError:
