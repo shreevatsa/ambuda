@@ -47,6 +47,14 @@ function initializeImageViewer(imageURL) {
   });
 }
 
+function nextPageUrl(currentPageUrl) {
+  const currentPageParts = currentPageUrl.split('/');
+  const currentPageNumberIndex = currentPageParts.length - 2;
+  const currentPageNumber = parseInt(currentPageParts[currentPageNumberIndex], 10);
+  const nextPageNumber = currentPageNumber + 1;
+  return currentPageUrl.replace(`/${currentPageNumber}/`, `/${nextPageNumber}/`);
+}
+
 // eslint-disable-next-line import/prefer-default-export
 export const Proofer = () => ({
   // Settings
@@ -288,8 +296,22 @@ export const Proofer = () => ({
   },
 
   // Before the form is submitted, copy contents of the ProseMirror editor back to the textarea.
-  syncPMToTextarea() {
+  syncPMToTextarea(event) {
     document.querySelector('textarea').value = this.textValue();
+
+    // TODO(shreevatsa): Revert rest of this function. Auto-navigate to the next page.
+    event.preventDefault(); // Prevent the default form submission
+    const formData = new FormData(document.getElementsByTagName('form')[0]);
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    }).then(response => {
+      if (response.ok) {
+        window.location.href = nextPageUrl(window.location.href);
+      } else {
+        throw new Error('Network response was not ok');
+      }
+    }).catch(error => console.error('Error:', error));
   },
 
   textValue() {
