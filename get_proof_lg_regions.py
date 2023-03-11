@@ -70,7 +70,7 @@ print(header)
 
 names = list(sorted(regions_for_name.keys()))
 expected = []
-for n in range(1, 172): expected.extend([f'{n:03}', f'{n:03}f'])
+for n in range(1, 181): expected.extend([f'{n:03}', f'{n:03}f'])
 try:
     assert names == expected, (names, 'vs', expected)
 except AssertionError:
