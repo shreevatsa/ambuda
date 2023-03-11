@@ -8,6 +8,13 @@ import { undo, redo, history } from 'prosemirror-history';
 import { baseKeymap } from 'prosemirror-commands';
 import { Step, StepResult, findWrapping } from 'prosemirror-transform';
 
+declare global {
+  interface Window {
+    verseNumber: any;
+    footnoteNumber: any;
+  }
+}
+
 // https://discuss.prosemirror.net/t/changing-doc-attrs/784
 class SetDocAttrStep extends Step {
   stepType: string;
@@ -96,24 +103,34 @@ class LineView {
   }
 }
 
-function makeLineGroup(state, dispatch, groupType: NodeType) {
+function increment(n) {
+  return (parseInt(n, 10) + 1).toString();
+}
+
+function makeLineGroup(state, dispatch, groupType: NodeType, groupNameGet?: () => string, groupNameSet?) {
   // Get a range around the selected blocks
   const range = state.selection.$from.blockRange(state.selection.$to)
   // See if it is possible to wrap that range in a note group
   let wrapping = findWrapping(range, groupType)
   if (!wrapping) return false
   // Now that we know it can be wrapped, create it again with a name.
-  const groupName = prompt("Name for this group?");
+  let groupName = groupNameGet ? groupNameGet() : prompt("Name for this group?");
+  if (groupNameSet) {
+    groupNameSet(groupName);
+  }
   const attrs = { groupName: groupName };
   wrapping = findWrapping(range, groupType, attrs);
   // Dispatch a transaction, using the `wrap` method to create the step that does the actual wrapping.
   if (dispatch) dispatch(state.tr.wrap(range, wrapping).scrollIntoView())
   return true
 }
-function makeLgHeader(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgHeader) }
-function makeLgVerse(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgVerse) }
+function makeLgHeader(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgHeader, () => '') }
+function makeLgVerse(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgVerse, undefined, window.verseNumber.set) }
+function makeLgVerseAutoIncrement(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgVerse, () => increment(window.verseNumber.get()), window.verseNumber.set) }
 function makeLgParagraph(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgParagraph) }
-function makeLgFootnote(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgFootnote) }
+function makeLgFootnote(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgFootnote, undefined, window.footnoteNumber.set) }
+function makeLgFootnoteAutoIncrement(state, dispatch) { return makeLineGroup(state, dispatch, schema.nodes.lgFootnote, () => increment(window.footnoteNumber.get()), window.footnoteNumber.set) }
+
 
 function lgToDom(node: Node, tagNameForLg: string): DOMOutputSpec {
   // <tagNameForLg> <div>(groupname)</div> <div>(contents)</div> </tagNameForLg>
@@ -362,9 +379,11 @@ export function createEditorFromTextAt(text: string, imageUrl: string, imageZoom
       keymap(baseKeymap),
       keymap({
         'Ctrl-h': makeLgHeader,
-        'Ctrl-v': makeLgVerse,
+        'Ctrl-v': makeLgVerseAutoIncrement,
+        'Ctrl-b': makeLgVerse,
         'Ctrl-p': makeLgParagraph,
-        'Ctrl-f': makeLgFootnote,
+        'Ctrl-f': makeLgFootnoteAutoIncrement,
+        'Ctrl-g': makeLgFootnote,
       })
     ],
   });

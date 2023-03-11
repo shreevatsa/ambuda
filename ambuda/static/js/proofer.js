@@ -66,6 +66,8 @@ export const Proofer = () => ({
   fromScript: 'hk',
   // [transliteration] the destination script
   toScript: 'devanagari',
+  lastVerseNumber: 180,
+  lastFootnoteNumber: 180,
 
   // Internal-only
   layoutClasses: CLASSES_SIDE_BY_SIDE,
@@ -97,6 +99,24 @@ export const Proofer = () => ({
     if (view.state.doc.content.content.length == 1) {
       this.runOCR();
     }
+    window.verseNumber = {
+      get: () => {
+        return this.lastVerseNumber;
+      },
+      set: (n) => {
+        this.lastVerseNumber = n;
+        this.saveSettings();
+      }
+    };
+    window.footnoteNumber = {
+      get: () => {
+        return this.lastFootnoteNumber;
+      },
+      set: (n) => {
+        this.lastFootnoteNumber = n;
+        this.saveSettings();
+      }
+    }
 
     // Use `.bind(this)` so that `this` in the function refers to this app and
     // not `window`.
@@ -115,6 +135,8 @@ export const Proofer = () => ({
         // initialized. See `init` for details.
         this.imageZoom = settings.imageZoom;
         this.imageZoomInEditor = settings.imageZoomInEditor || this.imageZoomInEditor;
+        this.lastVerseNumber = settings.lastVerseNumber || this.lastVerseNumber;
+        this.lastFootnoteNumber = settings.lastFootnoteNumber || this.lastFootnoteNumber;
         this.layout = settings.layout || this.layout;
 
         this.fromScript = settings.fromScript || this.fromScript;
@@ -130,6 +152,8 @@ export const Proofer = () => ({
       textZoom: this.textZoom,
       imageZoom: this.imageZoom,
       imageZoomInEditor: this.imageZoomInEditor,
+      lastVerseNumber: this.lastVerseNumber,
+      lastFootnoteNumber: this.lastFootnoteNumber,
       layout: this.layout,
       fromScript: this.fromScript,
       toScript: this.toScript,
