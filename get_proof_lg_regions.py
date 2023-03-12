@@ -108,7 +108,7 @@ In a word, he can prepare his own edition from the material placed before him; b
 I trust that he will not deny me the same privilege which I offer him.
 </blockquote>
 
-<p>He based his analysis on studying roughly 377 manuscripts, though he says there were probably much more than 3000 manuscripts in existence at the time:</p>
+<p>He based his analysis on studying roughly 380 manuscripts, though he says there were probably much more than 3000 manuscripts in existence at the time:</p>
 <blockquote>
 At a very conservative estimate, there exist today some 3000 MSS of Bhartrhari.
 Most of these, being hidden away in private collections, will be destroyed unused
@@ -126,6 +126,33 @@ Will see; may have to add a few from Group 3 as we go.
 Of the first 200, 8–76 is Nīti, 77–147 is Śṛṅgāra, 148–200 is Vairāgya. The rest (201–352) are alphabetical.</p>
 '''
 print(header)
+
+charts = '''
+<details>
+<summary>Charts</summary>
+'''
+for n in range(61, 78):
+    charts += f'''<div><a href="https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/1up"><img
+    src="https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}_rot90" class="inner-img"></a></div>
+    '''
+charts += '''
+</details>
+'''
+print(charts)
+
+index = '''
+<details>
+<summary>Alphabetical index</summary>
+'''
+for n in range(331, 344):
+    index += f'''<div><a href="https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/1up"><img
+    src="https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}" class="inner-img"></a></div>
+    '''
+index += '''
+</details>
+'''
+print(index)
+
 
 names = list(sorted(regions_for_name.keys()))
 expected = []
