@@ -26,15 +26,16 @@ for page_id in page_ids:
     for group in groups:
         if not('attrs' in group and 'groupName' in group['attrs']): continue
         name = group['attrs']['groupName']
-        if name is None: continue
         if group['type'] == 'lgHeader':
-            if name == '': continue
+            if name is None or name == '': continue
             eprint(name)
+        assert name is not None, group
         assert group['type'] in ('lgFootnote', 'lgVerse'), group['type']
         # Normalize name
         i = min([i for i in range(len(name)) if not str.isdigit(name[i])] + [len(name)])
         assert name[i:] in ('', 'f')
         new_name = f'{int(name[:i]):03}' + ('f' if group['type'] == 'lgFootnote' else '')
+        if int(new_name[:3]) > 352: continue
         eprint(f'Converted {name} to {new_name}')
         name = new_name
 
@@ -73,7 +74,7 @@ print(header)
 
 names = list(sorted(regions_for_name.keys()))
 expected = []
-for n in range(1, 276): expected.extend([f'{n:03}', f'{n:03}f'])
+for n in range(1, 353): expected.extend([f'{n:03}', f'{n:03}f'])
 try:
     assert names == expected, (names, 'vs', expected)
 except AssertionError:
