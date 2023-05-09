@@ -33,7 +33,7 @@ for page_id, slug in page_ids:
         if name.startswith('V'): name = name[1:]
         i = min([i for i in range(len(name)) if not str.isdigit(name[i])] + [len(name)])
         assert name[i:] in ('', 'f'), (name, name[i:])
-        new_name = '' if name == '' else (f'{int(name[:i]):03}' + ('f' if group['type'] == 'lgFootnote' else ''))
+        new_name = '' if name == '' else f'{int(name[:i]):03}'
         eprint(f'Converted {name} to {new_name}')
         name = new_name
 
