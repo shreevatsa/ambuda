@@ -33,8 +33,9 @@ for page_id in page_ids:
         assert group['type'] in ('lgFootnote', 'lgVerse'), group['type']
         # Normalize name
         i = min([i for i in range(len(name)) if not str.isdigit(name[i])] + [len(name)])
-        assert name[i:] in ('', 'f')
-        new_name = f'{int(name[:i]):03}' + ('f' if group['type'] == 'lgFootnote' else '')
+        assert name[i:] in ('', 'f'), (name, name[i:])
+        new_name = '' if name == '' else f'{int(name[:i]):03}'
+        # new_name = f'{int(name[:i]):03}' + ('f' if group['type'] == 'lgFootnote' else '')
         if int(new_name[:3]) > 352: continue
         eprint(f'Converted {name} to {new_name}')
         name = new_name
@@ -68,13 +69,41 @@ for region in json.load(open('kosambi-regions.json')):
     regions_for_name[name].append((region_type, region))
 
 
+names = list(sorted(regions_for_name.keys()))
+expected = []
+for n in range(1, 353): expected.extend([f'{n:03}'
+                                         #, f'{n:03}f'
+                                         ])
+try:
+    assert names == expected, (names, 'vs', expected)
+except AssertionError:
+    l = min(len(names), len(expected))
+    i = min([i for i in range(l) if names[i] != expected[i]] + [l])
+    assert False, (names[i:], '\nvs\n', expected[i:])
 
-# for name, regions in regions_for_name.items():
-#     print(name, regions)
+# GROUP BY name, type
+dump = collections.defaultdict(lambda: collections.defaultdict(list))
+for (name, types_and_regions) in regions_for_name.items():
+  for (region_type, region) in types_and_regions:
+    dump[name][region_type].append(region)
+# ORDER BY name
+dump2 = [(name, dump[name]) for name in sorted(dump)]
+dump3 = {
+   'totWidth': 3309.0,
+   'totHeight': 4678.0,
+   'imageUrlPrefix': 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked',
+   'pageUrlPrefix': 'https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked',
+   'regions': dump2,
+}
+json.dump(dump3, open('kosambi-regions-out.json', 'w'), indent=2)
 
-# TODO(shreevatsa): Remove this hard-coding. Get page dimensions from `content` (after saving it there).
-totWidth = 3309.0
-totHeight = 4678.0
+
+
+from_file = json.load(open('kosambi-regions-out.json'))
+totWidth = from_file['totWidth']
+totHeight = from_file['totHeight']
+imageUrlPrefix = from_file['imageUrlPrefix']
+pageUrlPrefix = from_file['pageUrlPrefix']
 
 header = '''
 <!doctype html>
@@ -169,24 +198,12 @@ index += '''
 print(index)
 
 
-names = list(sorted(regions_for_name.keys()))
-expected = []
-for n in range(1, 353): expected.extend([f'{n:03}', f'{n:03}f'])
-try:
-    assert names == expected, (names, 'vs', expected)
-except AssertionError:
-    l = min(len(names), len(expected))
-    i = min([i for i in range(l) if names[i] != expected[i]] + [l])
-    assert False, (names[i:], '\nvs\n', expected[i:])
-
-# GROUP BY name, type
-dump = collections.defaultdict(lambda: collections.defaultdict(list))
-for name, types_and_regions in sorted(regions_for_name.items()):
-  for (region_type, region) in types_and_regions:
-    dump[name][region_type].append(region)
-  eprint(name, dump[name])
-  for (region_type, regions) in dump[name].items():
-    blocks = []
+for (name, types_and_regions) in from_file['regions']:
+  for (region_type, regions) in types_and_regions.items():
+    # Generate HTML for this (name, region_type)
+    kSuffix = {'verse': '', 'footnote': 'f'}
+    s = f'<p>{name + kSuffix[region_type]}</p>\n'
+    t = ''
     for region in regions:
         n = region['page_id'] - 1
         x = region['xmin'] / totWidth; x = int(x * 100) / 100
@@ -196,13 +213,6 @@ for name, types_and_regions in sorted(regions_for_name.items()):
         image_url = 'https://archive.org/download/EpigramsAttributedToBhartrhariKosambiBookmarked/page/' + f'n{n}_x{x}_y{y}_w{w}_h{h}_s2.jpg'
         page_url = f'https://archive.org/details/EpigramsAttributedToBhartrhariKosambiBookmarked/page/n{n}/mode/2up'
         text = region['text']
-        blocks.append((image_url, page_url, text))
-    # print(name, urls)
-    
-    # Generate HTML for this name
-    s = f'<p>{name}</p>\n'
-    t = ''
-    for (image_url, page_url, text) in blocks:
         s += f'<a href="{page_url}"><img src={image_url} class="inner-img"></a>\n'
         for line in text:
             t += f'<p>{line}</p>\n'
